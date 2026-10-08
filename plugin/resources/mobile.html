@@ -21,7 +21,7 @@ h1{font-size:25px;line-height:1.05;margin:0;letter-spacing:-.03em}.sub{font-size
 .track{height:13px;border-radius:999px;background:#202838;overflow:hidden}.bar{height:100%;border-radius:inherit;transition:width .35s ease,background .35s ease}
 .meta{display:flex;justify-content:space-between;font-size:11px;color:#748197;margin-top:7px}
 .use{width:100%;height:48px;border-radius:14px;border:1px solid #2b3850;background:#111a2a;color:#f1f5f9;font-weight:850;font-size:14px}.use:disabled{opacity:.45}.use.active{border-color:#1f7da0;color:#7dd3fc;background:#0c1d29}
-.footer{text-align:center;color:#657086;font-size:11px;margin-top:18px;line-height:1.6}.error{color:#fb7185}
+.footer{text-align:center;color:#657086;font-size:11px;margin-top:18px;line-height:1.6}.activity{background:rgba(15,23,42,.72);border:1px solid #202c40;border-radius:18px;padding:14px 16px;margin-bottom:15px}.activity-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.activity-title{font-size:11px;font-weight:900;letter-spacing:.09em;color:#38bdf8}.activity-status{font-size:10px;font-weight:900;color:#94a3b8}.activity-message{font-size:13px;color:#dbe5f2;line-height:1.45;word-break:break-word}.activity-time{font-size:10px;color:#64748b;margin-top:6px}.error{color:#fb7185}
 </style>
 </head>
 <body>
@@ -30,12 +30,13 @@ h1{font-size:25px;line-height:1.05;margin:0;letter-spacing:-.03em}.sub{font-size
     <div><h1>CODEX STATUS</h1><div class="sub" id="updated">Carregando…</div></div>
     <button class="sync" id="refresh" aria-label="Atualizar">↻</button>
   </div>
-  <div id="accounts"></div>
+  <div id="activity"></div>\n  <div id="accounts"></div>
   <div class="footer" id="footer">Mesmo estado do Ulanzi • rede local</div>
 </div>
 <script>
 const TOKEN=__JEY_TOKEN__;
 const elAccounts=document.querySelector('#accounts');
+const elActivity=document.querySelector('#activity');
 const elUpdated=document.querySelector('#updated');
 const elRefresh=document.querySelector('#refresh');
 const elFooter=document.querySelector('#footer');
@@ -74,7 +75,7 @@ async function api(path,opts){
 async function load(){
   try{
     const state=await api('/api/status');
-    elAccounts.innerHTML=state.accounts.map(function(a){return accountCard(a,state.activeAccount,state.syncing)}).join('');
+    const act=state.activity||{};\n    elActivity.innerHTML='<section class="activity"><div class="activity-head"><span class="activity-title">ATIVIDADE ATUAL</span><span class="activity-status">'+esc(act.status||'—').toUpperCase()+'</span></div><div class="activity-message">'+esc(act.message||'Nenhuma atividade registrada')+'</div><div class="activity-time">'+(act.updatedAt?new Date(act.updatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—')+'</div></section>';\n    elAccounts.innerHTML=state.accounts.map(function(a){return accountCard(a,state.activeAccount,state.syncing)}).join('');
     const when=state.lastUpdatedAt?new Date(state.lastUpdatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'ainda não atualizado';
     elUpdated.textContent=(state.syncing?'SYNC • ':'Atualizado • ')+when;
     elRefresh.classList.toggle('busy',!!state.syncing);
