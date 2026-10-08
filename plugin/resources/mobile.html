@@ -32,7 +32,8 @@ h1{font-size:25px;line-height:1.05;margin:0;letter-spacing:-.03em}.sub{font-size
     <div><h1>CODEX STATUS</h1><div class="sub" id="updated">Carregando…</div></div>
     <button class="sync" id="refresh" aria-label="Atualizar">↻</button>
   </div>
-  <div id="activity"></div>\n  <div id="accounts"></div>
+  <div id="activity"></div>
+  <div id="accounts"></div>
   <div class="footer" id="footer">Mesmo estado do Ulanzi • rede local</div>
 </div>
 <script>
@@ -77,7 +78,9 @@ async function api(path,opts){
 async function load(){
   try{
     const state=await api('/api/status');
-    const act=state.activity||{};\n    elActivity.innerHTML='<section class="activity"><div class="activity-head"><span class="activity-title">ATIVIDADE ATUAL</span><span class="activity-status">'+esc(act.status||'—').toUpperCase()+'</span></div><div class="activity-message">'+esc(act.message||'Nenhuma atividade registrada')+'</div><div class="activity-time">'+(act.updatedAt?new Date(act.updatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—')+'</div></section>';\n    elAccounts.innerHTML=state.accounts.map(function(a){return accountCard(a,state.activeAccount,state.syncing)}).join('');
+    const act=state.activity||{};
+    elActivity.innerHTML='<section class="activity"><div class="activity-head"><span class="activity-title">ATIVIDADE ATUAL</span><span class="activity-status">'+esc(act.status||'—').toUpperCase()+'</span></div><div class="activity-message">'+esc(act.message||'Nenhuma atividade registrada')+'</div><div class="activity-time">'+(act.updatedAt?new Date(act.updatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—')+'</div></section>';
+    elAccounts.innerHTML=state.accounts.map(function(a){return accountCard(a,state.activeAccount,state.syncing)}).join('');
     const when=state.lastUpdatedAt?new Date(state.lastUpdatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'ainda não atualizado';
     elUpdated.textContent=(state.syncing?'SYNC • ':'Atualizado • ')+when;
     elRefresh.classList.toggle('busy',!!state.syncing);
