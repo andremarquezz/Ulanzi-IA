@@ -46,9 +46,11 @@ try {
   Write-Host 'Depois procure por Codex Limits e arraste as 5 acoes para as teclas.'
   Write-Host ''
   Write-Host 'PAINEL NO CELULAR' -ForegroundColor Cyan
-  Write-Host 'Depois que o Ulanzi Studio abrir, rode:' -ForegroundColor Gray
-  Write-Host 'Get-Content "$env:TEMP\jey-codex-d200h.log" -Tail 100 | Select-String "mobile url"' -ForegroundColor White
-  Write-Host 'Abra a URL exibida no Safari do iPhone.' -ForegroundColor Gray
+  Write-Host 'Depois que o Ulanzi Studio abrir, arraste ABRIR NO CELULAR para uma tecla e pressione uma vez.' -ForegroundColor Gray
+  Write-Host 'A URL será copiada automaticamente para o clipboard do Windows.' -ForegroundColor Gray
+  Write-Host 'Para ver a URL novamente:' -ForegroundColor Gray
+  Write-Host 'Get-Content "$env:TEMP\jey-codex-d200h.log" -Tail 100 | Select-String "open on phone"' -ForegroundColor White
+  Write-Host 'Pressione a tecla novamente para parar o servidor mobile.' -ForegroundColor Gray
 } finally {
   Pop-Location
 }
