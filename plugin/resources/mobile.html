@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#070b14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="manifest" href="./manifest.webmanifest?token=__JEY_TOKEN_VALUE__">
+<link rel="icon" href="./icon.svg?token=__JEY_TOKEN_VALUE__" type="image/svg+xml">
 <title>Codex Status</title>
 <style>
 :root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070b14;color:#f8fafc}
@@ -107,7 +107,7 @@ async function switchAccount(id){
 elRefresh.addEventListener('click',doRefresh);
 load();
 setInterval(load,15000);
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function(){});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?token=__JEY_TOKEN_VALUE__').catch(function(){});
 </script>
 </body>
 </html>
