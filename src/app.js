@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import UlanziApi from './vendor/ulanzi-api/index.js';
 import { queryAllAccounts } from './codex.js';
 import { gaugeSvg, initRenderer, svgToDataUri } from './render.js';
@@ -90,7 +91,7 @@ function renderInstance(instance) {
   const spec = ACTIONS[instance.uuid];
   if (!spec) return;
   if (spec.mobile) {
-    api.setPathIcon(instance.context, 'resources/icons/usage.png', 'CELULAR');
+    api.setPathIcon(instance.context, 'resources/icons/mobile.svg', 'CELULAR');
     return;
   }
 
@@ -211,8 +212,9 @@ api.onRun((message) => {
   const spec = ACTIONS[message?.uuid];
   if (spec?.mobile) {
     const url = mobile?.urls?.()[0] || 'painel mobile';
-    api.toast('Painel mobile ativo: ' + url);
-    log('mobile action pressed url=' + url);
+    const copied = copyToClipboard(url);
+    api.toast(copied ? 'URL mobile copiada para o clipboard' : 'URL mobile: ' + url);
+    log('mobile action pressed copied=' + copied + ' url=' + url);
     return;
   }
   void refresh(true);
