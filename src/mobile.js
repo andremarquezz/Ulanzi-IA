@@ -10,6 +10,9 @@ const DEFAULT_PORT = 3333;
 const TOKEN_FILE = path.join(os.homedir(), '.jey-codex-mobile-token');
 const here = dirname(fileURLToPath(import.meta.url));
 const MOBILE_HTML = path.join(here, '..', 'resources', 'mobile.html');
+const MOBILE_MANIFEST = path.join(here, '..', 'resources', 'manifest.webmanifest');
+const MOBILE_SW = path.join(here, '..', 'resources', 'sw.js');
+const MOBILE_ICON = path.join(here, '..', 'resources', 'icon.svg');
 
 function readOrCreateToken() {
   try {
@@ -38,6 +41,16 @@ function sendHtml(res, body) {
     'cache-control': 'no-store',
   });
   res.end(body);
+}
+
+function sendFile(res, file, contentType, cacheControl = 'no-cache') {
+  try {
+    const data = fs.readFileSync(file);
+    res.writeHead(200, { 'content-type': contentType, 'cache-control': cacheControl, 'content-length': data.length });
+    res.end(data);
+  } catch {
+    sendJson(res, 404, { error: 'not found' });
+  }
 }
 
 function localAddresses(port, token) {
@@ -82,6 +95,21 @@ export function startMobileServer({
 
       if (req.method === 'GET' && url.pathname === '/') {
         sendHtml(res, renderPage(token));
+        return;
+      }
+
+      if (req.method === 'GET' && url.pathname === '/manifest.webmanifest') {
+        sendFile(res, MOBILE_MANIFEST, 'application/manifest+json; charset=utf-8', 'no-cache');
+        return;
+      }
+
+      if (req.method === 'GET' && url.pathname === '/sw.js') {
+        sendFile(res, MOBILE_SW, 'application/javascript; charset=utf-8', 'no-cache');
+        return;
+      }
+
+      if (req.method === 'GET' && url.pathname === '/icon.svg') {
+        sendFile(res, MOBILE_ICON, 'image/svg+xml; charset=utf-8', 'public, max-age=86400');
         return;
       }
 
