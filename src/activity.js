@@ -2,17 +2,20 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const MAX_DEPTH = 6;
-const MAX_TAIL_BYTES = 128 * 1024;
-const ACTIVE_MS = 2 * 60 * 1000;
+const MAX_DEPTH = 8;
+const MAX_TAIL_BYTES = 256 * 1024;
+const MAX_FILES = 64;
+const ACTIVE_MS = 15 * 60 * 1000;
+const HISTORY_LIMIT = 8;
 
 function codexRoots() {
   const home = os.homedir();
   return [
+    process.env.CODEX_HOME,
     path.join(home, '.codex-jey'),
     path.join(home, '.codex-americano'),
     path.join(home, '.codex'),
-  ].filter((root, index, values) => values.indexOf(root) === index);
+  ].filter((root, index, values) => root && values.indexOf(root) === index);
 }
 
 function recentJsonlFiles(root) {
@@ -20,6 +23,7 @@ function recentJsonlFiles(root) {
 
   function visit(dir, depth) {
     if (depth > MAX_DEPTH) return;
+
     let entries;
     try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
 
@@ -29,7 +33,9 @@ function recentJsonlFiles(root) {
         visit(full, depth + 1);
         continue;
       }
+
       if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.jsonl')) continue;
+
       try {
         const stat = fs.statSync(full);
         result.push({ file: full, mtimeMs: stat.mtimeMs, size: stat.size });
@@ -42,74 +48,176 @@ function recentJsonlFiles(root) {
 }
 
 function readTail(file, size) {
+  let handle = null;
+
   try {
-    const handle = fs.openSync(file, 'r');
+    handle = fs.openSync(file, 'r');
     const length = Math.min(size, MAX_TAIL_BYTES);
     const start = Math.max(0, size - length);
     const buffer = Buffer.alloc(length);
     fs.readSync(handle, buffer, 0, length, start);
-    fs.closeSync(handle);
     return buffer.toString('utf8');
   } catch {
     return '';
+  } finally {
+    if (handle !== null) {
+      try { fs.closeSync(handle); } catch {}
+    }
   }
 }
 
 function textOf(value) {
   if (typeof value === 'string') return value.replace(/\s+/g, ' ').trim();
   if (Array.isArray(value)) return value.map(textOf).filter(Boolean).join(' ');
+
   if (value && typeof value === 'object') {
-    return textOf(value.text) || textOf(value.content) || textOf(value.message) || '';
+    return textOf(value.text)
+      || textOf(value.content)
+      || textOf(value.summary)
+      || textOf(value.message)
+      || textOf(value.title)
+      || '';
   }
+
   return '';
 }
 
-function short(value, max = 220) {
+function short(value, max = 240) {
   const text = textOf(value);
   return text.length > max ? text.slice(0, max - 1) + '…' : text;
 }
 
+function timestampOf(value, fallback) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value < 1e12 ? value * 1000 : value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  return fallback;
+}
+
+function projectName(cwd) {
+  if (!cwd) return '';
+  const clean = String(cwd).replace(/[\\/]+$/, '');
+  return clean.split(/[\\/]/).filter(Boolean).pop() || '';
+}
+
 function commandText(payload) {
   if (!payload || typeof payload !== 'object') return '';
+
   const args = payload.arguments || payload.input || payload.params;
   if (typeof args === 'string') {
     try { return commandText({ ...payload, arguments: JSON.parse(args) }); } catch {}
   }
+
   if (args && typeof args === 'object') {
     return short(args.command || args.cmd || args.commandLine || args.script || args.input);
   }
+
   return short(payload.command || payload.cmd || payload.commandLine);
 }
 
-function describe(record) {
-  const payload = record?.payload || record?.data || record;
-  const type = String(record?.type || payload?.type || '').toLowerCase();
-  const payloadType = String(payload?.type || '').toLowerCase();
+function recordType(record) {
+  const payload = record?.payload || record?.data || {};
+  return [
+    record?.type,
+    record?.event,
+    record?.name,
+    payload?.type,
+    payload?.event,
+    payload?.name,
+  ]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase())
+    .join(' ');
+}
 
-  if (/permission|approval|approve/.test(type + ' ' + payloadType)) {
-    return { status: 'waiting', message: 'Aguardando permissão' };
+function describe(record) {
+  const payload = record?.payload || record?.data || {};
+  const type = recordType(record);
+
+  if (/permission|approval|approve|exec_approval_request/.test(type)) {
+    return {
+      status: 'waiting',
+      message: short(payload.text || payload.message || payload.reason) || 'Aguardando permissão',
+      terminal: false,
+    };
   }
-  if (/task_complete|turn_complete|session_end|completed/.test(type + ' ' + payloadType)) {
-    return { status: 'stopped', message: 'Tarefa concluída' };
+
+  if (/(task|turn|session)[_-]?(complete|completed|end|ended)|(?:complete|completed)[_-]?(task|turn|session)|shutdown|process_exit|session_exit|turn_aborted|task_aborted/.test(type)) {
+    let message = 'Tarefa concluída';
+    if (/aborted|cancel|interrupt/.test(type)) message = 'Tarefa interrompida';
+    if (/error|failed/.test(type)) message = short(payload.text || payload.message || payload.error) || 'Codex reportou um erro';
+
+    return {
+      status: 'stopped',
+      message,
+      terminal: true,
+    };
   }
-  if (/task_start|turn_start|session_start/.test(type + ' ' + payloadType)) {
-    return { status: 'running', message: 'Codex iniciou uma tarefa' };
+
+  if (/error|failed/.test(type)) {
+    return {
+      status: 'stopped',
+      message: short(payload.text || payload.message || payload.error) || 'Codex reportou um erro',
+      terminal: true,
+    };
   }
-  if (/exec_command_begin|command_begin|shell_command/.test(type + ' ' + payloadType)) {
-    return { status: 'running', message: commandText(payload) ? 'Executando: ' + commandText(payload) : 'Executando comando' };
+
+  if (/exec_command_begin|command_begin|shell_command|apply_patch|patch_apply|file_write/.test(type)) {
+    const command = commandText(payload);
+    return {
+      status: 'running',
+      message: command ? 'Executando: ' + command : 'Executando comando',
+      terminal: false,
+    };
   }
-  if (/exec_command_end|command_end|function_call_output/.test(type + ' ' + payloadType)) {
-    return { status: 'running', message: 'Comando concluído' };
+
+  if (/exec_command_end|command_end|function_call_output|tool_result/.test(type)) {
+    return {
+      status: 'running',
+      message: 'Comando concluído',
+      terminal: false,
+    };
   }
-  if (payloadType === 'function_call' || /function_call/.test(type)) {
-    return { status: 'running', message: commandText(payload) || 'Executando uma ação' };
+
+  if (/function_call|tool_call|tool_use/.test(type)) {
+    return {
+      status: 'running',
+      message: commandText(payload) || short(payload.name || payload.tool) || 'Executando uma ação',
+      terminal: false,
+    };
   }
-  if (/reasoning|thinking/.test(type + ' ' + payloadType)) {
-    return { status: 'running', message: short(payload.text || payload.summary || payload.content) || 'Codex pensando' };
+
+  if (/task[_-]?start|turn[_-]?start|session[_-]?start|user[_-]?message|prompt/.test(type)) {
+    return {
+      status: 'running',
+      message: short(payload.text || payload.message || payload.prompt) || 'Codex iniciou uma tarefa',
+      terminal: false,
+    };
   }
-  if (payloadType === 'message' || type === 'message' || type === 'response_item') {
+
+  if (/reasoning|thinking|agent_message|assistant_message|response/.test(type)) {
+    return {
+      status: 'running',
+      message: short(payload.text || payload.summary || payload.content || payload.message) || 'Codex pensando',
+      terminal: false,
+    };
+  }
+
+  if (payload?.type === 'message' || record?.type === 'message') {
     const message = short(payload.text || payload.content || payload.message);
-    if (message) return { status: 'running', message };
+    if (message) {
+      return {
+        status: 'running',
+        message,
+        terminal: false,
+      };
+    }
   }
 
   return null;
@@ -117,10 +225,10 @@ function describe(record) {
 
 function parseFile(item) {
   const lines = readTail(item.file, item.size).split(/\r?\n/).filter(Boolean);
-  let latest = null;
+  const events = [];
   let cwd = '';
   let sessionId = '';
-  let timestamp = item.mtimeMs;
+  let latestTimestamp = item.mtimeMs;
 
   for (const line of lines) {
     let record;
@@ -128,46 +236,100 @@ function parseFile(item) {
 
     const payload = record?.payload || record?.data || {};
     cwd ||= payload.cwd || payload.workdir || record.cwd || '';
-    sessionId ||= payload.id || payload.session_id || record.session_id || '';
-    const rawTime = record.timestamp || record.created_at || payload.timestamp;
-    const parsedTime = rawTime ? Date.parse(rawTime) : NaN;
-    if (Number.isFinite(parsedTime)) timestamp = parsedTime;
+    sessionId ||= payload.id || payload.session_id || record.session_id || record.id || '';
+
+    const timestamp = timestampOf(
+      record.timestamp || record.created_at || payload.timestamp || payload.created_at,
+      item.mtimeMs,
+    );
+    latestTimestamp = Math.max(latestTimestamp, timestamp);
 
     const description = describe(record);
-    if (description) latest = { ...description, timestamp };
+    if (!description) continue;
+
+    const event = {
+      status: description.status,
+      message: description.message,
+      terminal: description.terminal,
+      updatedAt: new Date(timestamp).toISOString(),
+      timestamp,
+    };
+
+    const previous = events[events.length - 1];
+    if (!previous || previous.status !== event.status || previous.message !== event.message) {
+      events.push(event);
+    } else {
+      events[events.length - 1] = event;
+    }
+
+    if (events.length > HISTORY_LIMIT) events.shift();
   }
 
+  const latest = events[events.length - 1];
   if (!latest) return null;
-  const active = Date.now() - Math.max(timestamp, item.mtimeMs) <= ACTIVE_MS;
+
+  const ageMs = Math.max(0, Date.now() - latest.timestamp);
+  const active = !latest.terminal
+    && (latest.status === 'running' || latest.status === 'waiting')
+    && ageMs <= ACTIVE_MS;
+
   return {
-    ...latest,
-    status: active ? latest.status : 'stopped',
-    message: active ? latest.message : 'Parado • ' + latest.message,
-    updatedAt: new Date(Math.max(timestamp, item.mtimeMs)).toISOString(),
+    status: active ? latest.status : latest.terminal ? 'stopped' : 'stale',
+    message: latest.message,
+    updatedAt: latest.updatedAt,
     active,
-    project: cwd ? path.basename(cwd) : '',
+    terminal: latest.terminal,
+    stale: !active && !latest.terminal,
+    ageMs,
+    project: projectName(cwd),
     sessionId: sessionId || path.basename(item.file, '.jsonl'),
     source: item.file,
+    events: events
+      .slice()
+      .reverse()
+      .map(({ timestamp, ...event }) => event),
   };
+}
+
+function compareCandidates(left, right) {
+  if (left.active !== right.active) return left.active ? -1 : 1;
+  if (left.status === 'waiting' && right.status !== 'waiting') return -1;
+  if (right.status === 'waiting' && left.status !== 'waiting') return 1;
+  return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
 }
 
 export function readCodexActivity() {
   const files = codexRoots()
     .flatMap(recentJsonlFiles)
-    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+    .sort((a, b) => b.mtimeMs - a.mtimeMs)
+    .slice(0, MAX_FILES);
 
-  for (const file of files.slice(0, 12)) {
-    const activity = parseFile(file);
-    if (activity) return activity;
+  const candidates = files
+    .map(parseFile)
+    .filter(Boolean)
+    .sort(compareCandidates);
+
+  const selected = candidates[0];
+  if (!selected) {
+    return {
+      status: 'stopped',
+      message: 'Nenhuma atividade do Codex encontrada',
+      active: false,
+      terminal: false,
+      stale: false,
+      project: '',
+      sessionId: '',
+      updatedAt: null,
+      source: '',
+      events: [],
+      sessionCount: 0,
+      activeSessionCount: 0,
+    };
   }
 
   return {
-    status: 'stopped',
-    message: 'Nenhuma atividade do Codex encontrada',
-    active: false,
-    project: '',
-    sessionId: '',
-    updatedAt: null,
-    source: '',
+    ...selected,
+    sessionCount: candidates.length,
+    activeSessionCount: candidates.filter((candidate) => candidate.active).length,
   };
 }
