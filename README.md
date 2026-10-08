@@ -32,3 +32,8 @@ Get-Content "$env:TEMP\\jey-codex-d200h.log" -Tail 100 | Select-String "open on 
 ```
 
 O celular precisa estar na mesma rede Wi-Fi do PC.
+
+
+## Instalar no iPhone
+
+Abra a URL do painel no Safari, toque em Compartilhar e escolha **Adicionar à Tela de Início**. O painel possui manifest, ícone e service worker para abrir como aplicativo em tela cheia. A instalação continua funcionando somente enquanto o PC estiver ligado e na mesma rede local.
