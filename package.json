@@ -1,0 +1,22 @@
+{
+  "name": "jey-codex-d200h",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal Ulanzi D200H monitor for JEY and AMERICANO Codex quotas",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "install:ulanzi": "powershell -ExecutionPolicy Bypass -File .\\scripts\\install.ps1",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-wasm": "2.6.2",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

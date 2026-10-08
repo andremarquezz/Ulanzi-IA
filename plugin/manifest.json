@@ -1,0 +1,51 @@
+{
+  "Version": "1.0.0",
+  "Author": "Jey",
+  "Name": "Codex Limits",
+  "Description": "JEY + AMERICANO Codex quota monitor for D200H.",
+  "Icon": "resources/icons/usage.png",
+  "CodePath": "plugin/app.js",
+  "Type": "JavaScript",
+  "UUID": "com.ulanzi.ulanzistudio.jeycodex",
+  "Devices": ["D200H"],
+  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Actions": [
+    {
+      "Name": "JEY 5H",
+      "Icon": "resources/icons/usage.png",
+      "Tooltip": "JEY - limite de 5 horas",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.jey5h",
+      "Controllers": ["Keypad"],
+      "state": 0,
+      "States": [{ "Image": "resources/icons/usage.png" }]
+    },
+    {
+      "Name": "JEY 7D",
+      "Icon": "resources/icons/usage.png",
+      "Tooltip": "JEY - limite semanal",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.jey7d",
+      "Controllers": ["Keypad"],
+      "state": 0,
+      "States": [{ "Image": "resources/icons/usage.png" }]
+    },
+    {
+      "Name": "AMERICANO 5H",
+      "Icon": "resources/icons/usage.png",
+      "Tooltip": "AMERICANO - limite de 5 horas",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.americano5h",
+      "Controllers": ["Keypad"],
+      "state": 0,
+      "States": [{ "Image": "resources/icons/usage.png" }]
+    },
+    {
+      "Name": "AMERICANO 7D",
+      "Icon": "resources/icons/usage.png",
+      "Tooltip": "AMERICANO - limite semanal",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.americano7d",
+      "Controllers": ["Keypad"],
+      "state": 0,
+      "States": [{ "Image": "resources/icons/usage.png" }]
+    }
+  ],
+  "Software": { "MinVersion": "2.1.4" }
+}

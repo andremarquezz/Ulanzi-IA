@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070b14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Codex Status</title>
+<style>
+:root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070b14;color:#f8fafc}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#152033 0,#070b14 42%);padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 28px)}
+.wrap{max-width:560px;margin:0 auto}.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:4px 2px 20px}
+h1{font-size:25px;line-height:1.05;margin:0;letter-spacing:-.03em}.sub{font-size:12px;color:#8290a6;margin-top:6px}
+.sync{border:0;border-radius:14px;background:#172033;color:#e7edf7;min-width:48px;height:48px;font-size:20px;font-weight:800}.sync.busy{color:#38bdf8;animation:pulse .8s infinite alternate}@keyframes pulse{to{opacity:.45}}
+.account{background:rgba(15,23,42,.88);border:1px solid #202c40;border-radius:22px;padding:18px;margin-bottom:15px;box-shadow:0 16px 45px rgba(0,0,0,.2)}
+.account.active{border-color:#38bdf8;box-shadow:0 0 0 1px rgba(56,189,248,.16),0 16px 45px rgba(0,0,0,.2)}
+.account-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.name{font-size:18px;font-weight:800;letter-spacing:.04em}
+.badge{font-size:10px;font-weight:900;border-radius:999px;padding:6px 9px;background:#132235;color:#38bdf8;letter-spacing:.07em}.badge.off{background:#171d29;color:#718096}
+.limit{margin:12px 0 16px}.row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}.window{font-size:13px;color:#a8b3c4;font-weight:800}.pct{font-size:29px;font-weight:900;letter-spacing:-.04em}
+.track{height:13px;border-radius:999px;background:#202838;overflow:hidden}.bar{height:100%;border-radius:inherit;transition:width .35s ease,background .35s ease}
+.meta{display:flex;justify-content:space-between;font-size:11px;color:#748197;margin-top:7px}
+.use{width:100%;height:48px;border-radius:14px;border:1px solid #2b3850;background:#111a2a;color:#f1f5f9;font-weight:850;font-size:14px}.use:disabled{opacity:.45}.use.active{border-color:#1f7da0;color:#7dd3fc;background:#0c1d29}
+.footer{text-align:center;color:#657086;font-size:11px;margin-top:18px;line-height:1.6}.error{color:#fb7185}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>CODEX STATUS</h1><div class="sub" id="updated">Carregando…</div></div>
+    <button class="sync" id="refresh" aria-label="Atualizar">↻</button>
+  </div>
+  <div id="accounts"></div>
+  <div class="footer" id="footer">Mesmo estado do Ulanzi • rede local</div>
+</div>
+<script>
+const TOKEN=__JEY_TOKEN__;
+const elAccounts=document.querySelector('#accounts');
+const elUpdated=document.querySelector('#updated');
+const elRefresh=document.querySelector('#refresh');
+const elFooter=document.querySelector('#footer');
+let busy=false;
+
+function remaining(reading){return reading?Math.max(0,Math.min(100,100-reading.usedPercent)):null}
+function color(value){if(value===null)return'#475569';if(value>=60)return'#34d399';if(value>=35)return'#facc15';if(value>=15)return'#fb923c';return'#f43f5e'}
+function resetText(value){
+  if(!value)return'—';
+  const ms=Math.max(0,new Date(value).getTime()-Date.now()),mins=Math.floor(ms/60000);
+  const d=Math.floor(mins/1440),h=Math.floor((mins%1440)/60),m=mins%60;
+  return d>0?d+'d '+h+'h':h>0?h+'h '+m+'m':Math.max(0,m)+'m';
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function limit(label,reading,stale){
+  const rem=remaining(reading),pct=rem===null?'—':Math.round(rem)+'%';
+  return '<div class="limit"><div class="row"><span class="window">'+label+'</span><span class="pct" style="color:'+color(rem)+'">'+pct+'</span></div>'+
+  '<div class="track"><div class="bar" style="width:'+(rem??0)+'%;background:'+color(rem)+'"></div></div>'+
+  '<div class="meta"><span>'+(stale?'STALE':'restante')+'</span><span>reset '+resetText(reading&&reading.resetsAt)+'</span></div></div>';
+}
+function accountCard(a,active,syncing){
+  const stale=!!a.stale,isActive=active===a.id;
+  const status=a.status==='login'?'LOGIN':a.status==='error'?'OFFLINE':stale?'STALE':'OK';
+  return '<section class="account '+(isActive?'active':'')+'"><div class="account-head"><div class="name">'+esc(a.label)+'</div><div class="badge '+(isActive?'':'off')+'">'+(isActive?'ATIVA':status)+'</div></div>'+
+  limit('5H',a.fiveHour,stale)+limit('7D',a.sevenDay,stale)+
+  '<button class="use '+(isActive?'active':'')+'" data-account="'+a.id+'" '+((busy||syncing||isActive||a.status==='login')?'disabled':'')+'>'+(isActive?'CONTA ATIVA':'USAR '+esc(a.label))+'</button></section>';
+}
+async function api(path,opts){
+  opts=opts||{};
+  const joiner=path.indexOf('?')>=0?'&':'?';
+  const res=await fetch(path+joiner+'token='+encodeURIComponent(TOKEN),Object.assign({cache:'no-store'},opts));
+  const body=await res.json().catch(function(){return{}});
+  if(!res.ok)throw new Error(body.error||('HTTP '+res.status));
+  return body;
+}
+async function load(){
+  try{
+    const state=await api('/api/status');
+    elAccounts.innerHTML=state.accounts.map(function(a){return accountCard(a,state.activeAccount,state.syncing)}).join('');
+    const when=state.lastUpdatedAt?new Date(state.lastUpdatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'ainda não atualizado';
+    elUpdated.textContent=(state.syncing?'SYNC • ':'Atualizado • ')+when;
+    elRefresh.classList.toggle('busy',!!state.syncing);
+    elFooter.textContent='PC '+state.host+' • porta '+state.port;
+    document.querySelectorAll('[data-account]').forEach(function(btn){btn.addEventListener('click',function(){switchAccount(btn.dataset.account)})});
+  }catch(e){elFooter.innerHTML='<span class="error">'+esc(e.message)+'</span>'}
+}
+async function doRefresh(){
+  if(busy)return;
+  busy=true;elRefresh.classList.add('busy');
+  try{await api('/api/refresh',{method:'POST'});await load()}
+  catch(e){elFooter.innerHTML='<span class="error">'+esc(e.message)+'</span>'}
+  finally{busy=false;elRefresh.classList.remove('busy')}
+}
+async function switchAccount(id){
+  if(busy)return;
+  if(!confirm('Trocar o Codex para '+id.toUpperCase()+'?'))return;
+  busy=true;await load();
+  try{
+    const result=await api('/api/switch/'+id,{method:'POST'});
+    elFooter.textContent=result.vscodeRestarted?'Conta trocada • VS Code reiniciado':'Conta trocada • VS Code estava fechado';
+    await new Promise(function(resolve){setTimeout(resolve,700)});
+    await doRefresh();
+  }catch(e){elFooter.innerHTML='<span class="error">'+esc(e.message)+'</span>'}
+  finally{busy=false;await load()}
+}
+elRefresh.addEventListener('click',doRefresh);
+load();
+setInterval(load,15000);
+</script>
+</body>
+</html>
