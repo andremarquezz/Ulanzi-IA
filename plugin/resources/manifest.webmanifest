@@ -9,6 +9,6 @@
   "theme_color": "#070b14",
   "lang": "pt-BR",
   "icons": [
-    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "./icon.svg?token=__JEY_TOKEN_VALUE__", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }
