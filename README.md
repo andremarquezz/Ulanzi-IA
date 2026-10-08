@@ -25,13 +25,15 @@ npm run build
 npm run install:ulanzi
 ```
 
-Depois de instalar, reinicie o Ulanzi Studio. A URL do painel mobile aparece no log:
+Depois de instalar, reinicie completamente o Ulanzi Studio. Arraste **ABRIR NO CELULAR** para uma tecla e pressione uma vez. Isso inicia o servidor apenas quando você quiser acompanhar o Codex; pressione novamente para pará-lo.
+
+A URL é copiada automaticamente para o clipboard do Windows. Para consultar novamente sem precisar capturar o toast:
 
 ```powershell
 Get-Content "$env:TEMP\\jey-codex-d200h.log" -Tail 100 | Select-String "open on phone"
 ```
 
-O celular precisa estar na mesma rede Wi-Fi do PC.
+O celular precisa estar na mesma rede Wi-Fi do PC. A aba **CODEX** acompanha eventos recentes automaticamente; a aba **CONSUMO** mantém os limites.
 
 
 ## Instalar no iPhone
