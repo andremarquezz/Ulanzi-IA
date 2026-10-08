@@ -22,6 +22,7 @@ const ACTIONS = {
   'com.ulanzi.ulanzistudio.jeycodex.jey7d': { account: 'jey', window: 'sevenDay', label: '7D' },
   'com.ulanzi.ulanzistudio.jeycodex.americano5h': { account: 'americano', window: 'fiveHour', label: '5H' },
   'com.ulanzi.ulanzistudio.jeycodex.americano7d': { account: 'americano', window: 'sevenDay', label: '7D' },
+  'com.ulanzi.ulanzistudio.jeycodex.mobile': { mobile: true, label: 'CELULAR' },
 };
 
 const api = new UlanziApi();
@@ -88,6 +89,10 @@ function mobileState(port = Number(process.env.JEY_MOBILE_PORT || 3333)) {
 function renderInstance(instance) {
   const spec = ACTIONS[instance.uuid];
   if (!spec) return;
+  if (spec.mobile) {
+    api.setPathIcon(instance.context, 'resources/icons/usage.png', 'CELULAR');
+    return;
+  }
 
   const current = accountFor(spec);
   const fresh = accounts.get(spec.account);
@@ -202,7 +207,14 @@ api.onClear((message) => {
   if (message.context) instances.delete(message.context);
 });
 
-api.onRun(() => {
+api.onRun((message) => {
+  const spec = ACTIONS[message?.uuid];
+  if (spec?.mobile) {
+    const url = mobile?.urls?.()[0] || 'painel mobile';
+    api.toast('Painel mobile ativo: ' + url);
+    log('mobile action pressed url=' + url);
+    return;
+  }
   void refresh(true);
 });
 
