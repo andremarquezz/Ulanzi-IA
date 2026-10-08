@@ -66,7 +66,14 @@ function localAddresses(port, token) {
 
 function renderPage(token) {
   const html = fs.readFileSync(MOBILE_HTML, 'utf8');
-  return html.replace('__JEY_TOKEN__', JSON.stringify(token));
+  return html
+    .replaceAll('__JEY_TOKEN__', JSON.stringify(token))
+    .replaceAll('__JEY_TOKEN_VALUE__', encodeURIComponent(token));
+}
+
+function renderManifest(token) {
+  const manifest = fs.readFileSync(MOBILE_MANIFEST, 'utf8');
+  return manifest.replaceAll('__JEY_TOKEN_VALUE__', encodeURIComponent(token));
 }
 
 export function startMobileServer({
@@ -99,7 +106,9 @@ export function startMobileServer({
       }
 
       if (req.method === 'GET' && url.pathname === '/manifest.webmanifest') {
-        sendFile(res, MOBILE_MANIFEST, 'application/manifest+json; charset=utf-8', 'no-cache');
+        const manifest = renderManifest(token);
+        res.writeHead(200, { 'content-type': 'application/manifest+json; charset=utf-8', 'cache-control': 'no-cache' });
+        res.end(manifest);
         return;
       }
 
