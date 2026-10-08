@@ -16,6 +16,19 @@ function log(message) {
   try { fs.appendFileSync(LOG_FILE, new Date().toISOString() + ' ' + message + '\n'); } catch {}
 }
 
+function copyToClipboard(value) {
+  try {
+    if (process.platform === 'win32') {
+      const result = spawnSync('clip.exe', [], { input: value + '\r\n', encoding: 'utf8', windowsHide: true });
+      return result.status === 0;
+    }
+    const result = spawnSync('pbcopy', [], { input: value, encoding: 'utf8' });
+    return result.status === 0;
+  } catch {
+    return false;
+  }
+}
+
 log('plugin boot');
 
 const ACTIONS = {
