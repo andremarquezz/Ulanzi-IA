@@ -30,6 +30,7 @@ let accounts = new Map();
 let refreshing = null;
 let manualSync = false;
 let lastUpdatedAt = null;
+let activity = { status: 'starting', message: 'Plugin iniciado', updatedAt: new Date().toISOString() };
 const lastGood = new Map();
 
 try {
@@ -76,6 +77,7 @@ function mobileState(port = Number(process.env.JEY_MOBILE_PORT || 3333)) {
     syncing: manualSync || Boolean(refreshing),
     lastUpdatedAt,
     activeAccount: activeAccount(),
+    activity,
     accounts: [
       mobileAccount('jey'),
       mobileAccount('americano'),
