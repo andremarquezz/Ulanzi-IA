@@ -79,7 +79,7 @@
     },
     {
       "Name": "ABRIR NO CELULAR",
-      "Icon": "resources/icons/mobile.svg",
+      "Icon": "resources/icons/mobile-stopped.svg",
       "Tooltip": "Abre o painel Codex Status no celular",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.mobile",
       "Controllers": [
@@ -88,7 +88,10 @@
       "state": 0,
       "States": [
         {
-          "Image": "resources/icons/mobile.svg"
+          "Image": "resources/icons/mobile-running.svg"
+        },
+        {
+          "Image": "resources/icons/mobile-stopped.svg"
         }
       ]
     }
