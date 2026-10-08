@@ -85,7 +85,7 @@
       "Controllers": [
         "Keypad"
       ],
-      "state": 0,
+      "state": 1,
       "States": [
         {
           "Image": "resources/icons/mobile-running.png"
