@@ -1,0 +1,14 @@
+{
+  "name": "Codex Status",
+  "short_name": "Codex Status",
+  "description": "Painel local de limites e atividade do Codex",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
