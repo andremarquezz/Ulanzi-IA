@@ -7,45 +7,96 @@
   "CodePath": "plugin/app.js",
   "Type": "JavaScript",
   "UUID": "com.ulanzi.ulanzistudio.jeycodex",
-  "Devices": ["D200H"],
-  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "Devices": [
+    "D200H"
+  ],
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
   "Actions": [
     {
       "Name": "JEY 5H",
       "Icon": "resources/icons/usage.png",
       "Tooltip": "JEY - limite de 5 horas",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.jey5h",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
-      "States": [{ "Image": "resources/icons/usage.png" }]
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
     },
     {
       "Name": "JEY 7D",
       "Icon": "resources/icons/usage.png",
       "Tooltip": "JEY - limite semanal",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.jey7d",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
-      "States": [{ "Image": "resources/icons/usage.png" }]
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
     },
     {
       "Name": "AMERICANO 5H",
       "Icon": "resources/icons/usage.png",
       "Tooltip": "AMERICANO - limite de 5 horas",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.americano5h",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
-      "States": [{ "Image": "resources/icons/usage.png" }]
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
     },
     {
       "Name": "AMERICANO 7D",
       "Icon": "resources/icons/usage.png",
       "Tooltip": "AMERICANO - limite semanal",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.americano7d",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
-      "States": [{ "Image": "resources/icons/usage.png" }]
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
+    },
+    {
+      "Name": "ABRIR NO CELULAR",
+      "Icon": "resources/icons/mobile-stopped.png",
+      "Tooltip": "Abre o painel Codex Status no celular",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.mobile",
+      "Controllers": [
+        "Keypad"
+      ],
+      "state": 1,
+      "States": [
+        {
+          "Image": "resources/icons/mobile-running.png"
+        },
+        {
+          "Image": "resources/icons/mobile-stopped.png"
+        }
+      ]
     }
   ],
-  "Software": { "MinVersion": "2.1.4" }
+  "Software": {
+    "MinVersion": "2.1.4"
+  }
 }

@@ -1,10 +1,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import UlanziApi from './vendor/ulanzi-api/index.js';
 import { queryAllAccounts } from './codex.js';
 import { gaugeSvg, initRenderer, svgToDataUri } from './render.js';
 import { startMobileServer } from './mobile.js';
+import { readCodexActivity } from './activity.js';
 import { activeAccount, switchCodexAccount } from './switch.js';
 
 const PLUGIN_UUID = 'com.ulanzi.ulanzistudio.jeycodex';
@@ -15,6 +17,19 @@ function log(message) {
   try { fs.appendFileSync(LOG_FILE, new Date().toISOString() + ' ' + message + '\n'); } catch {}
 }
 
+function copyToClipboard(value) {
+  try {
+    if (process.platform === 'win32') {
+      const result = spawnSync('clip.exe', [], { input: value + '\r\n', encoding: 'utf8', windowsHide: true });
+      return result.status === 0;
+    }
+    const result = spawnSync('pbcopy', [], { input: value, encoding: 'utf8' });
+    return result.status === 0;
+  } catch {
+    return false;
+  }
+}
+
 log('plugin boot');
 
 const ACTIONS = {
@@ -22,6 +37,7 @@ const ACTIONS = {
   'com.ulanzi.ulanzistudio.jeycodex.jey7d': { account: 'jey', window: 'sevenDay', label: '7D' },
   'com.ulanzi.ulanzistudio.jeycodex.americano5h': { account: 'americano', window: 'fiveHour', label: '5H' },
   'com.ulanzi.ulanzistudio.jeycodex.americano7d': { account: 'americano', window: 'sevenDay', label: '7D' },
+  'com.ulanzi.ulanzistudio.jeycodex.mobile': { mobile: true, label: 'CELULAR' },
 };
 
 const api = new UlanziApi();
@@ -30,6 +46,8 @@ let accounts = new Map();
 let refreshing = null;
 let manualSync = false;
 let lastUpdatedAt = null;
+let mobile = null;
+let mobileRunning = false;
 const lastGood = new Map();
 
 try {
@@ -76,6 +94,8 @@ function mobileState(port = Number(process.env.JEY_MOBILE_PORT || 3333)) {
     syncing: manualSync || Boolean(refreshing),
     lastUpdatedAt,
     activeAccount: activeAccount(),
+    mobileRunning,
+    activity: readCodexActivity(),
     accounts: [
       mobileAccount('jey'),
       mobileAccount('americano'),
@@ -86,6 +106,10 @@ function mobileState(port = Number(process.env.JEY_MOBILE_PORT || 3333)) {
 function renderInstance(instance) {
   const spec = ACTIONS[instance.uuid];
   if (!spec) return;
+  if (spec.mobile) {
+    api.setStateIcon(instance.context, mobileRunning ? 0 : 1, 'CELULAR');
+    return;
+  }
 
   const current = accountFor(spec);
   const fresh = accounts.get(spec.account);
@@ -200,7 +224,21 @@ api.onClear((message) => {
   if (message.context) instances.delete(message.context);
 });
 
-api.onRun(() => {
+api.onRun((message) => {
+  const spec = ACTIONS[message?.uuid];
+  if (spec?.mobile) {
+    if (mobileRunning) {
+      stopMobile();
+      api.toast('Painel mobile parado');
+      return;
+    }
+    startMobile();
+    const url = mobile?.urls?.()[0] || 'painel mobile';
+    const copied = copyToClipboard(url);
+    api.toast(copied ? 'Painel iniciado • URL copiada' : 'Painel iniciado • URL: ' + url);
+    log('mobile action pressed copied=' + copied + ' url=' + url);
+    return;
+  }
   void refresh(true);
 });
 
@@ -215,23 +253,44 @@ api.onClose(() => { log('studio closed'); });
 log('connecting to studio');
 api.connect(PLUGIN_UUID);
 
-const mobile = startMobileServer({
-  getState: () => mobileState(),
-  refresh,
-  switchAccount: async (id) => {
-    log('mobile switch requested account=' + id);
-    const result = await switchCodexAccount(id);
-    await refresh(true);
-    log('mobile switch finished account=' + id + ' restarted=' + result.vscodeRestarted);
-    return {
-      ...result,
-      state: mobileState(),
-    };
-  },
-  log,
-});
+function updateMobileIcons() {
+  for (const instance of instances.values()) {
+    if (ACTIONS[instance.uuid]?.mobile) {
+      try { api.setStateIcon(instance.context, mobileRunning ? 0 : 1, 'CELULAR'); } catch {}
+    }
+  }
+}
 
-for (const url of mobile.urls()) log('open on phone ' + url);
+function startMobile() {
+  if (mobile) return;
+  mobile = startMobileServer({
+    getState: () => mobileState(),
+    refresh,
+    switchAccount: async (id) => {
+      log('mobile switch requested account=' + id);
+      const result = await switchCodexAccount(id);
+      await refresh(true);
+      log('mobile switch finished account=' + id + ' restarted=' + result.vscodeRestarted);
+      return {
+        ...result,
+        state: mobileState(),
+      };
+    },
+    log,
+  });
+  mobileRunning = true;
+  updateMobileIcons();
+  for (const url of mobile.urls()) log('open on phone ' + url);
+}
+
+function stopMobile() {
+  if (!mobile) return;
+  try { mobile.close(); } catch (error) { log('mobile close error: ' + String(error)); }
+  mobile = null;
+  mobileRunning = false;
+  updateMobileIcons();
+  log('mobile server stopped');
+}
 
 void refresh();
 

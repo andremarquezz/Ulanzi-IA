@@ -10,6 +10,9 @@ const DEFAULT_PORT = 3333;
 const TOKEN_FILE = path.join(os.homedir(), '.jey-codex-mobile-token');
 const here = dirname(fileURLToPath(import.meta.url));
 const MOBILE_HTML = path.join(here, '..', 'resources', 'mobile.html');
+const MOBILE_MANIFEST = path.join(here, '..', 'resources', 'manifest.webmanifest');
+const MOBILE_SW = path.join(here, '..', 'resources', 'sw.js');
+const MOBILE_ICON = path.join(here, '..', 'resources', 'icon.svg');
 
 function readOrCreateToken() {
   try {
@@ -40,6 +43,16 @@ function sendHtml(res, body) {
   res.end(body);
 }
 
+function sendFile(res, file, contentType, cacheControl = 'no-cache') {
+  try {
+    const data = fs.readFileSync(file);
+    res.writeHead(200, { 'content-type': contentType, 'cache-control': cacheControl, 'content-length': data.length });
+    res.end(data);
+  } catch {
+    sendJson(res, 404, { error: 'not found' });
+  }
+}
+
 function localAddresses(port, token) {
   const result = [];
   for (const entries of Object.values(os.networkInterfaces())) {
@@ -53,7 +66,14 @@ function localAddresses(port, token) {
 
 function renderPage(token) {
   const html = fs.readFileSync(MOBILE_HTML, 'utf8');
-  return html.replace('__JEY_TOKEN__', JSON.stringify(token));
+  return html
+    .replaceAll('__JEY_TOKEN__', JSON.stringify(token))
+    .replaceAll('__JEY_TOKEN_VALUE__', encodeURIComponent(token));
+}
+
+function renderManifest(token) {
+  const manifest = fs.readFileSync(MOBILE_MANIFEST, 'utf8');
+  return manifest.replaceAll('__JEY_TOKEN_VALUE__', encodeURIComponent(token));
 }
 
 export function startMobileServer({
@@ -82,6 +102,23 @@ export function startMobileServer({
 
       if (req.method === 'GET' && url.pathname === '/') {
         sendHtml(res, renderPage(token));
+        return;
+      }
+
+      if (req.method === 'GET' && url.pathname === '/manifest.webmanifest') {
+        const manifest = renderManifest(token);
+        res.writeHead(200, { 'content-type': 'application/manifest+json; charset=utf-8', 'cache-control': 'no-cache' });
+        res.end(manifest);
+        return;
+      }
+
+      if (req.method === 'GET' && url.pathname === '/sw.js') {
+        sendFile(res, MOBILE_SW, 'application/javascript; charset=utf-8', 'no-cache');
+        return;
+      }
+
+      if (req.method === 'GET' && url.pathname === '/icon.svg') {
+        sendFile(res, MOBILE_ICON, 'image/svg+xml; charset=utf-8', 'public, max-age=86400');
         return;
       }
 

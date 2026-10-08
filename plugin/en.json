@@ -2,9 +2,25 @@
   "Name": "Codex Limits",
   "Description": "JEY + AMERICANO Codex quota monitor.",
   "Actions": [
-    { "Name": "JEY 5H", "Tooltip": "JEY - 5 hour limit" },
-    { "Name": "JEY 7D", "Tooltip": "JEY - weekly limit" },
-    { "Name": "AMERICANO 5H", "Tooltip": "AMERICANO - 5 hour limit" },
-    { "Name": "AMERICANO 7D", "Tooltip": "AMERICANO - weekly limit" }
+    {
+      "Name": "JEY 5H",
+      "Tooltip": "JEY - 5 hour limit"
+    },
+    {
+      "Name": "JEY 7D",
+      "Tooltip": "JEY - weekly limit"
+    },
+    {
+      "Name": "AMERICANO 5H",
+      "Tooltip": "AMERICANO - 5 hour limit"
+    },
+    {
+      "Name": "AMERICANO 7D",
+      "Tooltip": "AMERICANO - weekly limit"
+    },
+    {
+      "Name": "ABRIR NO CELULAR",
+      "Tooltip": "Open Codex Status on your phone"
+    }
   ]
 }

@@ -31,17 +31,26 @@ try {
   Remove-Item $Target -Recurse -Force -ErrorAction SilentlyContinue
   Copy-Item $Source $Target -Recurse -Force
 
+  Write-Host '==> Liberando porta 3333 na rede privada' -ForegroundColor Cyan
+  try {
+    & netsh advfirewall firewall add rule name='Shindex Mobile 3333' dir=in action=allow protocol=TCP localport=3333 profile=private | Out-Null
+    if ($LASTEXITCODE -eq 0) { Write-Host 'Regra de firewall aplicada.' -ForegroundColor Green }
+    else { Write-Warning 'Nao foi possivel alterar o firewall automaticamente. Execute o comando indicado abaixo como Administrador.' }
+  } catch { Write-Warning 'Nao foi possivel alterar o firewall automaticamente.' }
+
   Write-Host ''
   Write-Host 'INSTALADO.' -ForegroundColor Green
   Write-Host "Plugin: $Target"
   Write-Host ''
   Write-Host 'Feche COMPLETAMENTE o Ulanzi Studio, inclusive o icone da bandeja, e abra novamente.' -ForegroundColor Yellow
-  Write-Host 'Depois procure por Codex Limits e arraste as 4 acoes para as teclas.'
+  Write-Host 'Depois procure por Codex Limits e arraste as 5 acoes para as teclas.'
   Write-Host ''
   Write-Host 'PAINEL NO CELULAR' -ForegroundColor Cyan
-  Write-Host 'Depois que o Ulanzi Studio abrir, rode:' -ForegroundColor Gray
-  Write-Host 'Get-Content "$env:TEMP\jey-codex-d200h.log" -Tail 100 | Select-String "mobile url"' -ForegroundColor White
-  Write-Host 'Abra a URL exibida no Safari do iPhone.' -ForegroundColor Gray
+  Write-Host 'Depois que o Ulanzi Studio abrir, arraste ABRIR NO CELULAR para uma tecla e pressione uma vez.' -ForegroundColor Gray
+  Write-Host 'A URL será copiada automaticamente para o clipboard do Windows.' -ForegroundColor Gray
+  Write-Host 'Para ver a URL novamente:' -ForegroundColor Gray
+  Write-Host 'Get-Content "$env:TEMP\jey-codex-d200h.log" -Tail 100 | Select-String "open on phone"' -ForegroundColor White
+  Write-Host 'Pressione a tecla novamente para parar o servidor mobile.' -ForegroundColor Gray
 } finally {
   Pop-Location
 }
