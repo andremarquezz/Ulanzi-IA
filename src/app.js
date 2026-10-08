@@ -292,7 +292,6 @@ function stopMobile() {
   log('mobile server stopped');
 }
 
-startMobile();
 void refresh();
 
 setInterval(() => {
