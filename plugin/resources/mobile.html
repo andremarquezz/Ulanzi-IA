@@ -23,14 +23,14 @@ h1{font-size:25px;line-height:1.05;margin:0;letter-spacing:-.03em}.sub{font-size
 .track{height:13px;border-radius:999px;background:#202838;overflow:hidden}.bar{height:100%;border-radius:inherit;transition:width .35s ease,background .35s ease}
 .meta{display:flex;justify-content:space-between;font-size:11px;color:#748197;margin-top:7px}
 .use{width:100%;height:48px;border-radius:14px;border:1px solid #2b3850;background:#111a2a;color:#f1f5f9;font-weight:850;font-size:14px}.use:disabled{opacity:.45}.use.active{border-color:#1f7da0;color:#7dd3fc;background:#0c1d29}
-.footer{text-align:center;color:#657086;font-size:11px;margin-top:18px;line-height:1.6}.activity{background:rgba(15,23,42,.72);border:1px solid #202c40;border-radius:18px;padding:14px 16px;margin-bottom:15px}.activity-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.activity-title{font-size:11px;font-weight:900;letter-spacing:.09em;color:#38bdf8}.activity-status{font-size:10px;font-weight:900;color:#94a3b8}.activity-message{font-size:13px;color:#dbe5f2;line-height:1.45;word-break:break-word}.activity-time{font-size:10px;color:#64748b;margin-top:6px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#111a2a;border:1px solid #202c40;border-radius:16px;padding:5px;margin-bottom:15px}.tab{height:42px;border:0;border-radius:11px;background:transparent;color:#7f8ca1;font-weight:900;letter-spacing:.07em;font-size:12px}.tab.active{background:#243650;color:#e6f6ff;box-shadow:0 3px 12px rgba(0,0,0,.18)}.panel.hidden{display:none}.error{color:#fb7185}
+.footer{text-align:center;color:#657086;font-size:11px;margin-top:18px;line-height:1.6}.activity{background:rgba(15,23,42,.8);border:1px solid #202c40;border-radius:20px;padding:16px;margin-bottom:15px;box-shadow:0 16px 45px rgba(0,0,0,.16)}.activity-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}.activity-title{font-size:11px;font-weight:900;letter-spacing:.09em;color:#38bdf8}.activity-status{font-size:10px;font-weight:900;border-radius:999px;padding:6px 8px;background:#172033;color:#94a3b8;letter-spacing:.06em;white-space:nowrap}.activity-status.running{background:#0b2c2a;color:#5eead4}.activity-status.waiting{background:#34280f;color:#facc15}.activity-status.stopped{background:#1f2937;color:#cbd5e1}.activity-status.stale{background:#30251a;color:#fdba74}.activity-message{font-size:14px;color:#e5edf8;line-height:1.48;word-break:break-word}.activity-meta{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:10px;color:#718096;margin-top:9px}.activity-meta span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.activity-stream{border-top:1px solid #202c40;margin-top:15px;padding-top:13px}.stream-title{font-size:10px;font-weight:900;color:#8290a6;letter-spacing:.1em;margin-bottom:10px}.event{display:grid;grid-template-columns:10px 1fr auto;gap:9px;align-items:start;padding:8px 0}.event-dot{width:8px;height:8px;border-radius:50%;background:#64748b;margin-top:5px}.event.current .event-dot{background:#2dd4bf;box-shadow:0 0 0 4px rgba(45,212,191,.12)}.event.waiting .event-dot{background:#facc15}.event.stopped .event-dot{background:#94a3b8}.event-copy{min-width:0}.event-label{font-size:10px;color:#8290a6;font-weight:900;letter-spacing:.06em}.event-message{font-size:12px;line-height:1.4;color:#cbd5e1;word-break:break-word}.event-time{font-size:10px;color:#64748b;white-space:nowrap}.empty{font-size:13px;color:#94a3b8}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#111a2a;border:1px solid #202c40;border-radius:16px;padding:5px;margin-bottom:15px}.tab{height:42px;border:0;border-radius:11px;background:transparent;color:#7f8ca1;font-weight:900;letter-spacing:.07em;font-size:12px}.tab.active{background:#243650;color:#e6f6ff;box-shadow:0 3px 12px rgba(0,0,0,.18)}.panel.hidden{display:none}.error{color:#fb7185}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
     <div><h1>CODEX STATUS</h1><div class="sub" id="updated">Carregando…</div></div>
-    <button class="sync" id="refresh" aria-label="Atualizar">↻</button>
+    <button class="sync" id="refresh" aria-label="Atualizar limites e atividade" title="Atualizar limites e atividade">↻</button>
   </div>
   <div class="tabs"><button class="tab active" data-tab="codex">CODEX</button><button class="tab" data-tab="usage">CONSUMO</button></div>
   <section id="codexPanel" class="panel"><div id="activity"></div></section>
@@ -47,6 +47,7 @@ const elUpdated=document.querySelector('#updated');
 const elRefresh=document.querySelector('#refresh');
 const elFooter=document.querySelector('#footer');
 let busy=false;
+let loading=false;
 
 function remaining(reading){return reading?Math.max(0,Math.min(100,100-reading.usedPercent)):null}
 function color(value){if(value===null)return'#475569';if(value>=60)return'#34d399';if(value>=35)return'#facc15';if(value>=15)return'#fb923c';return'#f43f5e'}
@@ -56,7 +57,47 @@ function resetText(value){
   const d=Math.floor(mins/1440),h=Math.floor((mins%1440)/60),m=mins%60;
   return d>0?d+'d '+h+'h':h>0?h+'h '+m+'m':Math.max(0,m)+'m';
 }
+function timeText(value){
+  if(!value)return'—';
+  const date=new Date(value);
+  return Number.isNaN(date.getTime())?'—':date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
 function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function statusText(activity){
+  if(activity.active&&activity.status==='waiting')return'AGUARDANDO PERMISSÃO';
+  if(activity.active&&activity.status==='running')return'RODANDO';
+  if(activity.status==='stopped'&&activity.terminal)return'CONCLUÍDA';
+  if(activity.status==='stale')return'SEM EVENTO RECENTE';
+  return'PARADO';
+}
+function statusClass(activity){
+  if(activity.active&&activity.status==='waiting')return'waiting';
+  if(activity.active&&activity.status==='running')return'running';
+  if(activity.status==='stopped'&&activity.terminal)return'stopped';
+  return'stale';
+}
+function eventLabel(status){
+  if(status==='waiting')return'AGUARDANDO PERMISSÃO';
+  if(status==='running')return'ATIVIDADE';
+  if(status==='stopped')return'FINALIZADO';
+  return'ATUALIZAÇÃO';
+}
+function renderActivity(activity){
+  const act=activity||{};
+  const events=Array.isArray(act.events)?act.events:[];
+  const label=statusText(act);
+  const cls=statusClass(act);
+  const meta=[];
+  if(act.project)meta.push('<span>Projeto: '+esc(act.project)+'</span>');
+  if(act.sessionId)meta.push('<span>Sessão: '+esc(act.sessionId)+'</span>');
+  if(act.updatedAt)meta.push('<span>Último evento: '+timeText(act.updatedAt)+'</span>');
+  const eventList=events.length?events.map(function(event,index){
+    const eventClass=event.status==='waiting'?'waiting':event.status==='stopped'?'stopped':'running';
+    return '<div class="event '+eventClass+' '+(index===0?'current':'')+'"><span class="event-dot"></span><div class="event-copy"><div class="event-label">'+eventLabel(event.status)+'</div><div class="event-message">'+esc(event.message)+'</div></div><span class="event-time">'+timeText(event.updatedAt)+'</span></div>';
+  }).join(''):'<div class="empty">Nenhum evento legível nesta sessão.</div>';
+  const sessions=act.sessionCount?'<span>'+act.sessionCount+' sessão'+(act.sessionCount===1?'':'ões')+' encontrada'+(act.sessionCount===1?'':'s')+'</span>':'';
+  elActivity.innerHTML='<section class="activity"><div class="activity-head"><span class="activity-title">ATIVIDADE DO CODEX</span><span class="activity-status '+cls+'">'+label+'</span></div><div class="activity-message">'+esc(act.message||'Nenhuma atividade registrada')+'</div><div class="activity-meta">'+meta.join('')+(sessions?'<span>'+sessions+'</span>':'')+'</div><div class="activity-stream"><div class="stream-title">EVENTOS RECENTES</div>'+eventList+'</div></section>';
+}
 function limit(label,reading,stale){
   const rem=remaining(reading),pct=rem===null?'—':Math.round(rem)+'%';
   return '<div class="limit"><div class="row"><span class="window">'+label+'</span><span class="pct" style="color:'+color(rem)+'">'+pct+'</span></div>'+
@@ -87,24 +128,35 @@ function setTab(name){
 document.querySelectorAll('[data-tab]').forEach(function(button){button.addEventListener('click',function(){setTab(button.dataset.tab)})});
 
 async function load(){
+  if(loading)return;
+  loading=true;
   try{
     const state=await api('/api/status');
-    const act=state.activity||{};
-    elActivity.innerHTML='<section class="activity"><div class="activity-head"><span class="activity-title">ATIVIDADE ATUAL</span><span class="activity-status">'+esc(act.status||'—').toUpperCase()+'</span></div><div class="activity-message">'+esc(act.message||'Nenhuma atividade registrada')+'</div><div class="activity-time">'+(act.project?'Projeto: '+esc(act.project)+' • ':'')+(act.sessionId?'Sessão: '+esc(act.sessionId)+' • ':'')+(act.updatedAt?new Date(act.updatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—')+'</div></section>';
+    renderActivity(state.activity);
     elAccounts.innerHTML=state.accounts.map(function(a){return accountCard(a,state.activeAccount,state.syncing)}).join('');
-    const when=state.lastUpdatedAt?new Date(state.lastUpdatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'ainda não atualizado';
-    elUpdated.textContent=(state.syncing?'SYNC • ':'Atualizado • ')+when;
-    elRefresh.classList.toggle('busy',!!state.syncing);
-    elFooter.textContent='PC '+state.host+' • porta '+state.port;
+    const when=state.lastUpdatedAt?timeText(state.lastUpdatedAt):'ainda não atualizado';
+    elUpdated.textContent=(state.syncing?'SINCRONIZANDO LIMITES • ':'LIMITES • ')+when;
+    elRefresh.classList.toggle('busy',!!state.syncing||busy);
+    elFooter.textContent='PC '+state.host+' • porta '+state.port+' • atividade atualizada automaticamente';
     document.querySelectorAll('[data-account]').forEach(function(btn){btn.addEventListener('click',function(){switchAccount(btn.dataset.account)})});
   }catch(e){elFooter.innerHTML='<span class="error">'+esc(e.message)+'</span>'}
+  finally{loading=false}
 }
 async function doRefresh(){
   if(busy)return;
-  busy=true;elRefresh.classList.add('busy');
-  try{await api('/api/refresh',{method:'POST'});await load()}
-  catch(e){elFooter.innerHTML='<span class="error">'+esc(e.message)+'</span>'}
-  finally{busy=false;elRefresh.classList.remove('busy')}
+  busy=true;
+  elRefresh.classList.add('busy');
+  elUpdated.textContent='ATUALIZANDO LIMITES E ATIVIDADE…';
+  try{
+    await load();
+    await api('/api/refresh',{method:'POST'});
+    await load();
+  }catch(e){elFooter.innerHTML='<span class="error">'+esc(e.message)+'</span>'}
+  finally{
+    busy=false;
+    elRefresh.classList.remove('busy');
+    await load();
+  }
 }
 async function switchAccount(id){
   if(busy)return;
@@ -120,7 +172,7 @@ async function switchAccount(id){
 }
 elRefresh.addEventListener('click',doRefresh);
 load();
-setInterval(load,15000);
+setInterval(load,5000);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?token=__JEY_TOKEN_VALUE__').catch(function(){});
 </script>
 </body>
