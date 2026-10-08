@@ -138,10 +138,13 @@ function parseFile(item) {
   }
 
   if (!latest) return null;
+  const active = Date.now() - Math.max(timestamp, item.mtimeMs) <= ACTIVE_MS;
   return {
     ...latest,
+    status: active ? latest.status : 'stopped',
+    message: active ? latest.message : 'Parado • ' + latest.message,
     updatedAt: new Date(Math.max(timestamp, item.mtimeMs)).toISOString(),
-    active: Date.now() - Math.max(timestamp, item.mtimeMs) <= ACTIVE_MS,
+    active,
     project: cwd ? path.basename(cwd) : '',
     sessionId: sessionId || path.basename(item.file, '.jsonl'),
     source: item.file,
