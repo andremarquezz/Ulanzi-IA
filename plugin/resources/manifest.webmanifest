@@ -2,7 +2,7 @@
   "name": "Codex Status",
   "short_name": "Codex Status",
   "description": "Painel local de limites e atividade do Codex",
-  "start_url": "./?source=pwa",
+  "start_url": "./?token=__JEY_TOKEN_VALUE__&source=pwa",
   "scope": "./",
   "display": "standalone",
   "background_color": "#070b14",
