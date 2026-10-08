@@ -6,6 +6,7 @@ import UlanziApi from './vendor/ulanzi-api/index.js';
 import { queryAllAccounts } from './codex.js';
 import { gaugeSvg, initRenderer, svgToDataUri } from './render.js';
 import { startMobileServer } from './mobile.js';
+import { readCodexActivity } from './activity.js';
 import { activeAccount, switchCodexAccount } from './switch.js';
 
 const PLUGIN_UUID = 'com.ulanzi.ulanzistudio.jeycodex';
@@ -45,7 +46,8 @@ let accounts = new Map();
 let refreshing = null;
 let manualSync = false;
 let lastUpdatedAt = null;
-let activity = { status: 'starting', message: 'Plugin iniciado', updatedAt: new Date().toISOString() };
+let mobile = null;
+let mobileRunning = false;
 const lastGood = new Map();
 
 try {
@@ -92,7 +94,8 @@ function mobileState(port = Number(process.env.JEY_MOBILE_PORT || 3333)) {
     syncing: manualSync || Boolean(refreshing),
     lastUpdatedAt,
     activeAccount: activeAccount(),
-    activity,
+    mobileRunning,
+    activity: readCodexActivity(),
     accounts: [
       mobileAccount('jey'),
       mobileAccount('americano'),
@@ -104,7 +107,7 @@ function renderInstance(instance) {
   const spec = ACTIONS[instance.uuid];
   if (!spec) return;
   if (spec.mobile) {
-    api.setPathIcon(instance.context, 'resources/icons/mobile.svg', 'CELULAR');
+    api.setStateIcon(instance.context, mobileRunning ? 0 : 1, 'CELULAR');
     return;
   }
 
@@ -224,9 +227,15 @@ api.onClear((message) => {
 api.onRun((message) => {
   const spec = ACTIONS[message?.uuid];
   if (spec?.mobile) {
+    if (mobileRunning) {
+      stopMobile();
+      api.toast('Painel mobile parado');
+      return;
+    }
+    startMobile();
     const url = mobile?.urls?.()[0] || 'painel mobile';
     const copied = copyToClipboard(url);
-    api.toast(copied ? 'URL mobile copiada para o clipboard' : 'URL mobile: ' + url);
+    api.toast(copied ? 'Painel iniciado • URL copiada' : 'Painel iniciado • URL: ' + url);
     log('mobile action pressed copied=' + copied + ' url=' + url);
     return;
   }
@@ -244,24 +253,46 @@ api.onClose(() => { log('studio closed'); });
 log('connecting to studio');
 api.connect(PLUGIN_UUID);
 
-const mobile = startMobileServer({
-  getState: () => mobileState(),
-  refresh,
-  switchAccount: async (id) => {
-    log('mobile switch requested account=' + id);
-    const result = await switchCodexAccount(id);
-    await refresh(true);
-    log('mobile switch finished account=' + id + ' restarted=' + result.vscodeRestarted);
-    return {
-      ...result,
-      state: mobileState(),
-    };
-  },
-  log,
-});
+function updateMobileIcons() {
+  for (const instance of instances.values()) {
+    if (ACTIONS[instance.uuid]?.mobile) {
+      try { api.setStateIcon(instance.context, mobileRunning ? 0 : 1, 'CELULAR'); } catch {}
+    }
+  }
+}
 
-for (const url of mobile.urls()) log('open on phone ' + url);
+function startMobile() {
+  if (mobile) return;
+  mobile = startMobileServer({
+    getState: () => mobileState(),
+    refresh,
+    switchAccount: async (id) => {
+      log('mobile switch requested account=' + id);
+      const result = await switchCodexAccount(id);
+      await refresh(true);
+      log('mobile switch finished account=' + id + ' restarted=' + result.vscodeRestarted);
+      return {
+        ...result,
+        state: mobileState(),
+      };
+    },
+    log,
+  });
+  mobileRunning = true;
+  updateMobileIcons();
+  for (const url of mobile.urls()) log('open on phone ' + url);
+}
 
+function stopMobile() {
+  if (!mobile) return;
+  try { mobile.close(); } catch (error) { log('mobile close error: ' + String(error)); }
+  mobile = null;
+  mobileRunning = false;
+  updateMobileIcons();
+  log('mobile server stopped');
+}
+
+startMobile();
 void refresh();
 
 setInterval(() => {
