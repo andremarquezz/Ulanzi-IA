@@ -59,3 +59,7 @@ Esse arquivo registra quantas janelas foram detectadas, quais etapas executaram 
 Se os projetos nao forem recuperados automaticamente, confira window.restoreWindows = all.
 
 Execute `npm test` e `npm run build` para as validacoes locais.
+
+### Restauracao de janelas apos trocar a conta
+
+O Codex Limits tenta reabrir as pastas abertas sem solicitar login novamente. Para nao deixar o usuario esperando por varios minutos, a restauracao agora tem limites de espera e **nao repete indefinidamente**. O VS Code inicia sem `windowsHide` (somente os auxiliares de console rodam ocultos). Se apenas uma janela for reaberta, a conta continua trocada e o painel mostra uma mensagem informando `1/2 janelas`; a outra pasta pode ser aberta manualmente. Consulte `switch.log` para diagnostico. O PR ainda requer teste real das duas janelas no PC.
