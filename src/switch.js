@@ -1,8 +1,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn, execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 const homes = {
   jey: path.join(os.homedir(), '.codex-jey'),
@@ -11,6 +15,32 @@ const homes = {
 
 const liveHome = path.join(os.homedir(), '.codex');
 const VSCODE_PROFILE = process.env.JEY_VSCODE_PROFILE || 'Jey';
+const LOG_DIR = path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'CodexLimits');
+export const SWITCH_LOG_FILE = path.join(LOG_DIR, 'switch.log');
+const closeScript = path.join(dirname(fileURLToPath(import.meta.url)), '..', 'resources', 'vscode-close-all.ps1');
+
+function writeLog(run, stage, detail = '') {
+  try {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+
+    if (fs.existsSync(SWITCH_LOG_FILE) && fs.statSync(SWITCH_LOG_FILE).size > 1024 * 1024) {
+      fs.renameSync(SWITCH_LOG_FILE, SWITCH_LOG_FILE + '.old');
+    }
+
+    const line = [new Date().toISOString(), 'run=' + run, stage, String(detail).replaceAll('\n', ' ')].join(' | ');
+    fs.appendFileSync(SWITCH_LOG_FILE, line + '\n', 'utf8');
+  } catch {
+    // Logging must never prevent a safe switch.
+  }
+}
+
+export class AccountSwitchError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = 'AccountSwitchError';
+    this.code = code;
+  }
+}
 
 function readAccountId(file) {
   try {
@@ -22,60 +52,40 @@ function readAccountId(file) {
 }
 
 export function activeAccount() {
-  const liveId = readAccountId(path.join(liveHome, 'auth.json'));
-  if (!liveId) return null;
-
+  const live = readAccountId(path.join(liveHome, 'auth.json'));
+  if (!live) return null;
   for (const [id, home] of Object.entries(homes)) {
-    if (readAccountId(path.join(home, 'auth.json')) === liveId) return id;
+    if (readAccountId(path.join(home, 'auth.json')) === live) return id;
   }
-
   return null;
 }
 
-function preserveCurrentAuth() {
-  const id = activeAccount();
-  if (!id) return;
-
+function preserveCurrentAuth(run) {
+  const account = activeAccount();
   const source = path.join(liveHome, 'auth.json');
-  const target = path.join(homes[id], 'auth.json');
   if (!fs.existsSync(source)) return;
 
-  fs.mkdirSync(homes[id], { recursive: true });
-  fs.copyFileSync(source, target);
+  if (!account) {
+    // Never overwrite either dedicated login when we cannot identify the live account.
+    const backup = path.join(liveHome, 'auth-unknown-before-switch.bak');
+    fs.copyFileSync(source, backup);
+    writeLog(run, 'auth', 'Unknown current account backed up locally.');
+    return;
+  }
+
+  const destination = path.join(homes[account], 'auth.json');
+  fs.copyFileSync(source, destination);
+  writeLog(run, 'auth', 'Saved current credential to ' + account + ' vault.');
 }
 
-function isVsCodeRunning() {
+async function isVsCodeRunning() {
   if (process.platform !== 'win32') return false;
-
-  try {
-    const result = spawnSync('tasklist.exe', ['/FI', 'IMAGENAME eq Code.exe', '/NH'], {
-      encoding: 'utf8',
-      windowsHide: true,
-    });
-    return /Code\.exe/i.test(result.stdout || '');
-  } catch {
-    return false;
-  }
-}
-
-function visibleVsCodeWindowCount() {
-  if (process.platform !== 'win32') return 0;
-
-  const command = "@(Get-Process Code -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 }).Count";
-  try {
-    const result = spawnSync('powershell.exe', ['-NoProfile', '-WindowStyle', 'Hidden', '-Command', command], {
-      encoding: 'utf8',
-      windowsHide: true,
-    });
-    const count = Number.parseInt(String(result.stdout || '').trim(), 10);
-    return Number.isFinite(count) ? count : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function sleep(ms) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  const { stdout } = await execFileAsync('tasklist.exe', ['/FI', 'IMAGENAME eq Code.exe', '/NH'], {
+    encoding: 'utf8',
+    windowsHide: true,
+    timeout: 10000,
+  });
+  return /Code\.exe/i.test(stdout);
 }
 
 function codeExecutable() {
@@ -84,47 +94,35 @@ function codeExecutable() {
     path.join(process.env.ProgramFiles || '', 'Microsoft VS Code', 'Code.exe'),
     path.join(process.env['ProgramFiles(x86)'] || '', 'Microsoft VS Code', 'Code.exe'),
   ];
-
-  return candidates.find((candidate) => {
-    try { return candidate && fs.existsSync(candidate); } catch { return false; }
-  }) || null;
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
 }
 
 function uriOrPath(value) {
   if (!value) return null;
 
   if (typeof value === 'object') {
-    return uriOrPath(
-      value.configPath
-      || value.uri
-      || value.external
-      || value.fsPath
-      || value.path,
-    );
+    return uriOrPath(value.configPath || value.uri || value.external || value.fsPath || value.path);
   }
 
   const raw = String(value);
   if (!raw) return null;
-
-  try {
-    if (/^file:/i.test(raw)) return path.normalize(fileURLToPath(raw));
-  } catch {}
-
-  if (path.isAbsolute(raw)) return path.normalize(raw);
-  return null;
+  if (/^file:/i.test(raw)) {
+    try { return path.normalize(fileURLToPath(raw)); } catch { return null; }
+  }
+  return path.isAbsolute(raw) ? path.normalize(raw) : null;
 }
 
 function targetsFromStorage(file) {
-  let data;
-  try { data = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; }
+  let json;
+  try { json = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; }
 
-  const state = data?.windowsState || {};
+  const state = json?.windowsState ?? {};
   const entries = [
     ...(Array.isArray(state.openedWindows) ? state.openedWindows : []),
     state.lastActiveWindow,
   ].filter(Boolean);
 
-  const result = [];
+  const results = [];
   for (const entry of entries) {
     const candidates = [
       entry?.workspace?.configPath,
@@ -135,151 +133,215 @@ function targetsFromStorage(file) {
       entry?.folderPath,
     ];
 
-    const target = candidates.map(uriOrPath).find(Boolean);
-    if (!target) continue;
-
-    try {
-      if (fs.existsSync(target)) result.push(target);
-    } catch {}
+    const target = candidates.map(uriOrPath).find((value) => value && fs.existsSync(value));
+    if (target) results.push(target);
   }
-
-  return result;
+  return results;
 }
 
 function captureVsCodeTargets() {
-  if (process.platform !== 'win32') return [];
-
   const appData = process.env.APPDATA || '';
-  const storageFiles = [
+  const files = [
     path.join(appData, 'Code', 'storage.json'),
     path.join(appData, 'Code - Insiders', 'storage.json'),
   ];
 
   const seen = new Set();
-  const targets = [];
-
-  for (const file of storageFiles) {
+  const results = [];
+  for (const file of files) {
     for (const target of targetsFromStorage(file)) {
       const key = target.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      targets.push(target);
+      results.push(target);
     }
   }
-
-  return targets;
+  return results;
 }
 
-function closeVsCodeGracefully() {
-  if (process.platform !== 'win32') return true;
-  if (!isVsCodeRunning()) return true;
+async function closeAllVsCode(run, progress) {
+  if (!fs.existsSync(closeScript)) {
+    throw new AccountSwitchError('HELPER_MISSING', 'Arquivo auxiliar de fechamento nao foi encontrado. Reinstale o plugin.');
+  }
 
-  const closeCommand = "Get-Process Code -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | ForEach-Object { [void]$_.CloseMainWindow() }";
-  spawnSync('powershell.exe', ['-NoProfile', '-WindowStyle', 'Hidden', '-Command', closeCommand], {
-    stdio: 'ignore',
-    windowsHide: true,
-  });
+  progress('Fechando todas as janelas...');
+  writeLog(run, 'close', 'Requesting WM_CLOSE for every real Code.exe window.');
 
-  const deadline = Date.now() + 15000;
-  while (visibleVsCodeWindowCount() > 0 && Date.now() < deadline) sleep(300);
+  let stdout;
+  try {
+    const response = await execFileAsync('powershell.exe', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy', 'Bypass',
+      '-File', closeScript,
+      '-Mode', 'close',
+      '-TimeoutSeconds', '35',
+    ], { encoding: 'utf8', windowsHide: true, timeout: 48000, maxBuffer: 1024 * 1024 });
+    stdout = response.stdout;
+  } catch (error) {
+    writeLog(run, 'close-error', error.message);
+    throw new AccountSwitchError('CLOSE_COMMAND', 'Falha ao fechar o VS Code. Consulte switch.log.');
+  }
 
-  if (visibleVsCodeWindowCount() > 0) return false;
+  let outcome;
+  try { outcome = JSON.parse(stdout.trim()); } catch {
+    writeLog(run, 'close-error', 'Invalid close helper response: ' + String(stdout).slice(0, 350));
+    throw new AccountSwitchError('CLOSE_RESPONSE', 'Nao foi possivel verificar as janelas do VS Code.');
+  }
 
-  if (isVsCodeRunning()) {
-    spawnSync('taskkill.exe', ['/IM', 'Code.exe', '/T', '/F'], {
+  const count = outcome.windowsBefore?.length || 0;
+  const remaining = outcome.windowsRemaining?.length || 0;
+  writeLog(run, 'windows', 'before=' + count + ' remaining=' + remaining + ' processesRemaining=' + outcome.processesRemaining);
+  for (const window of outcome.windowsBefore || []) {
+    writeLog(run, 'window', window.title);
+  }
+
+  if (!outcome.success) {
+    throw new AccountSwitchError(
+      'WINDOWS_OPEN',
+      'Ainda existem ' + remaining + ' janela(s) ou processo(s) do VS Code. Salve os arquivos e feche os dialogos pendentes.',
+    );
+  }
+
+  return count;
+}
+
+async function launchCode(exe, args) {
+  await new Promise((resolve, reject) => {
+    const child = spawn(exe, args, {
+      detached: true,
       stdio: 'ignore',
       windowsHide: true,
+      env: { ...process.env, CODEX_HOME: liveHome },
     });
-  }
-
-  const backgroundDeadline = Date.now() + 5000;
-  while (isVsCodeRunning() && Date.now() < backgroundDeadline) sleep(250);
-  return !isVsCodeRunning();
+    child.once('error', reject);
+    child.once('spawn', () => {
+      child.unref();
+      resolve();
+    });
+  });
 }
 
-function spawnCode(exe, args) {
-  const child = exe
-    ? spawn(exe, args, {
-        detached: true,
-        stdio: 'ignore',
-        windowsHide: true,
-        env: { ...process.env, CODEX_HOME: liveHome },
-      })
-    : spawn('cmd.exe', ['/d', '/s', '/c', 'start "" code ' + args.map((arg) => '"' + arg.replaceAll('"', '\\"') + '"').join(' ')], {
-        detached: true,
-        stdio: 'ignore',
-        windowsHide: true,
-        env: { ...process.env, CODEX_HOME: liveHome },
-      });
-  child.unref();
-}
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function restartVsCode(targets) {
-  if (process.platform !== 'win32') return false;
+async function reopenVsCode(run, targets, expectedCount, progress) {
+  progress('Reabrindo projetos...');
 
   const exe = codeExecutable();
-  const common = ['--profile', VSCODE_PROFILE];
-
-  try {
-    if (targets.length > 0) {
-      targets.forEach((target, index) => {
-        const args = [...common, ...(index > 0 ? ['--new-window'] : []), target];
-        spawnCode(exe, args);
-        if (index === 0) sleep(650);
-      });
-    } else {
-      spawnCode(exe, common);
-    }
-    return true;
-  } catch {
-    return false;
+  if (!exe) {
+    throw new AccountSwitchError('CODE_MISSING', 'Conta alterada, mas Code.exe nao foi encontrado.');
   }
+
+  // The storage file is captured after all windows finish closing and the session is persisted.
+  // If it lists fewer projects than editor windows, leave restoration to VS Code itself
+  // rather than reopening only a partial set of projects.
+  const explicit = targets.length > 0 && targets.length >= expectedCount;
+  writeLog(run, 'restore', 'windowsBefore=' + expectedCount + ' capturedTargets=' + targets.length + ' mode=' + (explicit ? 'explicit' : 'native'));
+
+  const common = ['--profile', VSCODE_PROFILE];
+  if (explicit) {
+    for (const target of targets) {
+      await launchCode(exe, [...common, '--new-window', target]);
+      writeLog(run, 'reopen-request', target);
+      await wait(750);
+    }
+  } else {
+    await launchCode(exe, common);
+    writeLog(run, 'reopen-request', 'Native window/session restoration requested.');
+  }
+
+  // Distinguish a successful spawn from an editor that actually started.
+  for (let attempt = 0; attempt < 20; attempt++) {
+    if (await isVsCodeRunning()) {
+      writeLog(run, 'reopen-ok', 'Code.exe detected after relaunch.');
+      return { requested: explicit ? targets : [], restoreMode: explicit ? 'explicit' : 'native' };
+    }
+    await wait(400);
+  }
+  throw new AccountSwitchError('REOPEN_TIMEOUT', 'Conta trocada, mas o VS Code nao iniciou. Abra-o normalmente.');
 }
 
-export async function switchCodexAccount(id) {
-  const sourceHome = homes[id];
-  if (!sourceHome) throw new Error('Conta invalida.');
+export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
+  const run = new Date().toISOString().replace(/[-:.TZ]/g, '') + '-' + id;
+  const progress = (message) => {
+    writeLog(run, 'progress', message);
+    onProgress(message);
+  };
 
-  const source = path.join(sourceHome, 'auth.json');
-  if (!fs.existsSync(source)) {
-    throw new Error('auth.json nao encontrado para ' + id.toUpperCase());
-  }
+  writeLog(run, 'start', 'target=' + id);
+  try {
+    if (process.platform !== 'win32') {
+      throw new AccountSwitchError('OS_UNSUPPORTED', 'A troca automatica so esta disponivel no Windows.');
+    }
 
-  const current = activeAccount();
-  if (current === id) {
+    if (!homes[id]) {
+      throw new AccountSwitchError('INVALID_ACCOUNT', 'Conta invalida: ' + id);
+    }
+
+    const source = path.join(homes[id], 'auth.json');
+    if (!fs.existsSync(source) || !readAccountId(source)) {
+      throw new AccountSwitchError('LOGIN_MISSING', 'O login do Codex ' + id.toUpperCase() + ' nao foi encontrado. Configure essa conta primeiro.');
+    }
+
+    const jeyId = readAccountId(path.join(homes.jey, 'auth.json'));
+    const americanoId = readAccountId(path.join(homes.americano, 'auth.json'));
+    if (jeyId && americanoId && jeyId === americanoId) {
+      throw new AccountSwitchError('SAME_LOGIN', 'Jey e Americano estao com o mesmo login. Confira o configurador.');
+    }
+
+    if (activeAccount() === id) {
+      writeLog(run, 'already-active', id);
+      return { ok: true, activeAccount: id, alreadyActive: true, vscodeWasRunning: await isVsCodeRunning(), vscodeRestarted: false, reopenedTargets: [] };
+    }
+
+    const wasRunning = await isVsCodeRunning();
+    let originalWindows = 0;
+    if (wasRunning) {
+      progress('Identificando janelas abertas...');
+      originalWindows = await closeAllVsCode(run, progress);
+      // Never modify the auth if the editor is still running.
+      if (await isVsCodeRunning()) {
+        throw new AccountSwitchError('PROCESS_STILL_RUNNING', 'Ainda existe Code.exe em execucao. Troca cancelada.');
+      }
+    }
+
+    // Credentials are swapped only after all windows are safely closed.
+    progress('Aplicando conta ' + id.toUpperCase() + '...');
+    preserveCurrentAuth(run);
+    fs.mkdirSync(liveHome, { recursive: true });
+
+    const destination = path.join(liveHome, 'auth.json');
+    const backup = path.join(liveHome, 'auth.before-last-switch.bak');
+    if (fs.existsSync(destination)) fs.copyFileSync(destination, backup);
+    const temp = path.join(liveHome, 'auth.switching.tmp');
+    fs.copyFileSync(source, temp);
+    fs.renameSync(temp, destination);
+    writeLog(run, 'auth-swapped', 'live auth now points to ' + id);
+
+    // Re-check after VS Code has persisted its final session state.
+    const targets = wasRunning && originalWindows > 0 ? captureVsCodeTargets() : [];
+    writeLog(run, 'targets', 'found=' + targets.length);
+    for (const target of targets) writeLog(run, 'target', target);
+
+    let restart = { requested: [], restoreMode: 'none' };
+    if (originalWindows > 0) {
+      restart = await reopenVsCode(run, targets, originalWindows, progress);
+    }
+
+    progress('Concluido');
+    writeLog(run, 'success', 'target=' + id + ' reopenMode=' + restart.restoreMode);
+
     return {
       ok: true,
       activeAccount: id,
-      alreadyActive: true,
-      vscodeWasRunning: isVsCodeRunning(),
-      vscodeRestarted: false,
-      reopenedTargets: [],
+      alreadyActive: false,
+      vscodeWasRunning: wasRunning,
+      vscodeRestarted: originalWindows > 0,
+      reopenedTargets: restart.requested,
+      restoreMode: restart.restoreMode,
     };
+  } catch (error) {
+    writeLog(run, 'ERROR', (error.code || 'UNKNOWN') + ' ' + (error.stack || error.message || String(error)));
+    throw error;
   }
-
-  const vscodeWasRunning = isVsCodeRunning();
-  const targets = vscodeWasRunning ? captureVsCodeTargets() : [];
-
-  if (vscodeWasRunning && !closeVsCodeGracefully()) {
-    throw new Error('Feche ou salve as janelas pendentes do VS Code e tente novamente.');
-  }
-
-  preserveCurrentAuth();
-
-  fs.mkdirSync(liveHome, { recursive: true });
-  const target = path.join(liveHome, 'auth.json');
-  const tmp = path.join(liveHome, 'auth.json.jey-switch.tmp');
-  fs.copyFileSync(source, tmp);
-  fs.renameSync(tmp, target);
-
-  const vscodeRestarted = vscodeWasRunning ? restartVsCode(targets) : false;
-
-  return {
-    ok: true,
-    activeAccount: id,
-    alreadyActive: false,
-    vscodeWasRunning,
-    vscodeRestarted,
-    reopenedTargets: vscodeRestarted ? targets : [],
-  };
 }
