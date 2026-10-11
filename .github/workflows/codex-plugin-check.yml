@@ -23,3 +23,14 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
+  windows-helper:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Windows close-helper syntax and window enumeration
+        shell: pwsh
+        run: |
+          $result = & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File plugin/resources/vscode-close-all.ps1 -Mode list | ConvertFrom-Json
+          if ($result.success -ne $true) { throw "VS Code window helper failed smoke check" }
+          Write-Host "Window helper loaded. Windows found: $(@($result.windows).Count)"
