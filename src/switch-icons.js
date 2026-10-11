@@ -21,11 +21,6 @@ export function switchIconSvg(account, state = 'idle', stage = '') {
 
   const centerSize = id === 'americano' ? 42 : 54;
   const footerSize = label.length > 9 ? 14 : 17;
-  const symbol = state === 'active' ? '✓'
-    : state === 'error' ? '!'
-      : state === 'switching' ? '↻'
-        : '›';
-
   // Labels are included IN the bitmap; Ulanzi's textData is too small on the keys.
   return '<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">'
     + '<rect width="144" height="144" rx="15" fill="' + palette.bg + '"/>'
