@@ -114,24 +114,53 @@ do {
 $remaining = @([CodexWindowTools]::List())
 $success = $remaining.Count -eq 0
 $forceClosedBackground = $false
+$stopAttempts = 0
+$backgroundBefore = @()
+$backgroundErrors = @()
 
 if ($success) {
-    # Only remaining background processes can be stopped forcibly.
-    # Never force-stop while a visible VS Code window (or save dialog) exists.
-    Start-Sleep -Milliseconds 1300
+    # Give VS Code time to save its window state and shut down voluntarily.
+    Start-Sleep -Milliseconds 1500
     $remaining = @([CodexWindowTools]::List())
     $success = $remaining.Count -eq 0
+
     if ($success) {
-        $background = @(Get-Process -Name Code -ErrorAction SilentlyContinue)
-        if ($background.Count -gt 0) {
-            $background | Stop-Process -Force -ErrorAction SilentlyContinue
-            $forceClosedBackground = $true
+        $backgroundBefore = @(Get-Process -Name Code -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id)
+        $backgroundDeadline = (Get-Date).AddSeconds(12)
+
+        # Stop-Process can return before the process has actually exited.
+        # Retry and poll instead of declaring failure immediately after a kill.
+        while ((Get-Date) -lt $backgroundDeadline) {
+            $background = @(Get-Process -Name Code -ErrorAction SilentlyContinue)
+            if ($background.Count -eq 0) { break }
+
+            # Never force-kill a visible editor or a visible unsaved-changes dialog.
+            $remaining = @([CodexWindowTools]::List())
+            if ($remaining.Count -gt 0) {
+                $success = $false
+                break
+            }
+
+            $stopAttempts++
+            foreach ($proc in $background) {
+                try {
+                    Stop-Process -Id $proc.Id -Force -ErrorAction Stop
+                    $forceClosedBackground = $true
+                }
+                catch {
+                    $backgroundErrors += ('PID ' + $proc.Id + ': ' + $_.Exception.Message)
+                }
+            }
+
+            # The process may be in the middle of exiting even after Stop-Process.
+            Start-Sleep -Milliseconds 650
         }
     }
 }
 
+$remaining = @([CodexWindowTools]::List())
 $processes = @(Get-Process -Name Code -ErrorAction SilentlyContinue)
-$success = $success -and $processes.Count -eq 0
+$success = $success -and $remaining.Count -eq 0 -and $processes.Count -eq 0
 
 [PSCustomObject]@{
     success = $success
@@ -141,6 +170,10 @@ $success = $success -and $processes.Count -eq 0
     windowsRemaining = @($remaining | ForEach-Object {
         [PSCustomObject]@{ pid = $_.Pid; title = $_.Title }
     })
+    backgroundProcessesBefore = @($backgroundBefore)
+    backgroundProcessesRemaining = @($processes | Select-Object -ExpandProperty Id)
+    backgroundStopAttempts = $stopAttempts
+    backgroundErrors = @($backgroundErrors | Select-Object -Unique)
     backgroundProcessesStopped = $forceClosedBackground
     processesRemaining = $processes.Count
 } | ConvertTo-Json -Compress -Depth 5
