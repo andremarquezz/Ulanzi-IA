@@ -325,6 +325,8 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
     }
 
     const wasRunning = await isVsCodeRunning();
+    const targetsBeforeClose = wasRunning ? captureVsCodeTargets() : [];
+    writeLog(run, 'pre-close-targets', 'found=' + targetsBeforeClose.length);
     let originalWindows = 0;
     if (wasRunning) {
       progress('Identificando janelas abertas...');
@@ -348,9 +350,17 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
     fs.renameSync(temp, destination);
     writeLog(run, 'auth-swapped', 'live auth now points to ' + id);
 
-    // Re-check after VS Code has persisted its final session state.
-    const targets = wasRunning && originalWindows > 0 ? captureVsCodeTargets() : [];
-    writeLog(run, 'targets', 'found=' + targets.length);
+    // Read the persisted state again after the editor closes. Keep the pre-close
+    // snapshot as an additional source in case the last window overwrites storage.
+    const targetsAfterClose = wasRunning && originalWindows > 0 ? captureVsCodeTargets() : [];
+    const targetMap = new Map();
+    for (const value of [...targetsAfterClose, ...targetsBeforeClose]) {
+      targetMap.set(value.toLowerCase(), value);
+    }
+    const targets = originalWindows > 0 ? [...targetMap.values()] : [];
+
+    writeLog(run, 'targets', 'before=' + targetsBeforeClose.length
+      + ' after=' + targetsAfterClose.length + ' union=' + targets.length);
     for (const target of targets) writeLog(run, 'target', target);
 
     let restart = { requested: [], restoreMode: 'none' };
