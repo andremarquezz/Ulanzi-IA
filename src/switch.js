@@ -5,6 +5,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { restoreProjectWindows } from './window-restore.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -259,53 +260,36 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function reopenVsCode(run, targets, expectedCount, progress) {
   progress('Reabrindo projetos...');
-
   const exe = codeExecutable();
   if (!exe) {
     throw new AccountSwitchError('CODE_MISSING', 'Conta alterada, mas Code.exe nao foi encontrado.');
   }
 
-  // The storage file is captured after all windows finish closing and the session is persisted.
-  // If it lists fewer projects than editor windows, leave restoration to VS Code itself
-  // rather than reopening only a partial set of projects.
-  const explicit = targets.length > 0 && targets.length >= expectedCount;
-  writeLog(run, 'restore', 'windowsBefore=' + expectedCount + ' capturedTargets=' + targets.length + ' mode=' + (explicit ? 'explicit' : 'native'));
-
   const common = ['--profile', VSCODE_PROFILE];
-  if (explicit) {
-    for (const target of targets) {
-      await launchCode(exe, [...common, '--new-window', target]);
-      writeLog(run, 'reopen-request', target);
-      await wait(750);
-    }
-  } else {
-    await launchCode(exe, common);
-    writeLog(run, 'reopen-request', 'Native window/session restoration requested.');
+  const result = await restoreProjectWindows({
+    targets,
+    expectedCount,
+    openTarget: (target) => launchCode(exe, [...common, '--new-window', target]),
+    openNative: () => launchCode(exe, common),
+    listWindows: inspectVisibleVsCodeWindows,
+    pause: wait,
+    log: (step, detail) => writeLog(run, step, detail),
+  });
+
+  if (!result.restored) {
+    const error = new AccountSwitchError(
+      'REOPEN_INCOMPLETE',
+      'A conta foi trocada, mas so ' + result.visibleWindows
+        + ' de ' + result.expectedWindows + ' janela(s) do VS Code foram restauradas.'
+        + ' Verifique o log para identificar os projetos pendentes.',
+    );
+    error.windowsRestored = result.visibleWindows;
+    error.windowsExpected = result.expectedWindows;
+    throw error;
   }
 
-  // Check real editor windows, not just Code.exe background processes.
-  // A launch is not considered successful when only one of three windows returns.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await wait(attempt === 0 ? 3500 : 4500);
-
-    try {
-      const opened = await inspectVisibleVsCodeWindows();
-      writeLog(run, 'reopen-check', 'attempt=' + (attempt + 1) + ' visibleWindows=' + opened.length + ' expected=' + expectedCount);
-      if (opened.length >= expectedCount) {
-        writeLog(run, 'reopen-ok', 'All ' + expectedCount + ' VS Code windows detected.');
-        return { requested: explicit ? targets : [], restoreMode: explicit ? 'explicit' : 'native' };
-      }
-    } catch (error) {
-      writeLog(run, 'reopen-check-error', error.message);
-    }
-  }
-
-  const codeAlive = await isVsCodeRunning();
-  const reason = codeAlive
-    ? 'O VS Code iniciou, mas nao foi possivel confirmar todas as ' + expectedCount + ' janelas. Confira os projetos e consulte o log.'
-    : 'A conta foi trocada, mas o VS Code nao iniciou. Abra-o normalmente e consulte o log.';
-
-  throw new AccountSwitchError(codeAlive ? 'REOPEN_INCOMPLETE' : 'REOPEN_TIMEOUT', reason);
+  writeLog(run, 'reopen-ok', 'Restored ' + result.visibleWindows + ' VS Code windows.');
+  return result;
 }
 
 export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
@@ -316,6 +300,7 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
   };
 
   writeLog(run, 'start', 'target=' + id);
+  let credentialsApplied = false;
   try {
     if (process.platform !== 'win32') {
       throw new AccountSwitchError('OS_UNSUPPORTED', 'A troca automatica so esta disponivel no Windows.');
@@ -381,6 +366,7 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
     const temp = path.join(liveHome, 'auth.switching.tmp');
     fs.copyFileSync(source, temp);
     fs.renameSync(temp, destination);
+    credentialsApplied = true;
     writeLog(run, 'auth-swapped', 'live auth now points to ' + id);
 
     // Read the persisted state again after the editor closes. Keep the pre-close
@@ -414,7 +400,14 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
       restoreMode: restart.restoreMode,
     };
   } catch (error) {
-    writeLog(run, 'ERROR', (error.code || 'UNKNOWN') + ' ' + (error.stack || error.message || String(error)));
+    // Restart errors happen after auth.json was replaced. Do not imply that
+    // authentication failed when only the editor restoration was incomplete.
+    error.accountChanged = credentialsApplied && activeAccount() === id;
+    error.activeAccount = activeAccount();
+    writeLog(run, 'ERROR', (error.code || 'UNKNOWN')
+      + ' accountChanged=' + error.accountChanged
+      + ' activeAccount=' + error.activeAccount + ' '
+      + (error.stack || error.message || String(error)));
     throw error;
   }
 }
