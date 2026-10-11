@@ -6,6 +6,7 @@ import path from 'node:path';
  * This helper waits for each requested project before asking for the next.
  */
 export function windowMatchesTarget(window, target) {
+  if (!target) return false;
   const basename = path.basename(target)
     .replace(/\.code-workspace$/i, '')
     .trim()
@@ -53,8 +54,7 @@ export async function restoreProjectWindows({
       // Require a newly visible window before dispatching the next project.
       // Match the window title when possible, but support localized titles and
       // other VS Code window naming schemes through the count fallback.
-      if (windows.some((window) => windowMatchesTarget(window, target))
-        || windows.length >= minimumCount) {
+      if (windows.length >= minimumCount) {
         return windows;
       }
     }
@@ -87,8 +87,7 @@ export async function restoreProjectWindows({
           + ' attempt=' + attempt
           + ' visibleWindows=' + windows.length);
 
-        if (windows.some((window) => windowMatchesTarget(window, target))
-          || windows.length >= minimumCount) {
+        if (windows.length >= minimumCount) {
           break;
         }
         if (attempt === 1) log('reopen-retry', target + ' did not create a visible editor.');
