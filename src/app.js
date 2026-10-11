@@ -38,6 +38,8 @@ const ACTIONS = {
   'com.ulanzi.ulanzistudio.jeycodex.americano5h': { account: 'americano', window: 'fiveHour', label: '5H' },
   'com.ulanzi.ulanzistudio.jeycodex.americano7d': { account: 'americano', window: 'sevenDay', label: '7D' },
   'com.ulanzi.ulanzistudio.jeycodex.mobile': { mobile: true, label: 'CELULAR' },
+  'com.ulanzi.ulanzistudio.jeycodex.switchjey': { switchAccount: 'jey', label: 'JEY' },
+  'com.ulanzi.ulanzistudio.jeycodex.switchamericano': { switchAccount: 'americano', label: 'AMERICANO' },
 };
 
 const api = new UlanziApi();
@@ -48,6 +50,7 @@ let manualSync = false;
 let lastUpdatedAt = null;
 let mobile = null;
 let mobileRunning = false;
+let switchingAccount = null;
 const lastGood = new Map();
 
 try {
@@ -94,6 +97,7 @@ function mobileState(port = Number(process.env.JEY_MOBILE_PORT || 3333)) {
     syncing: manualSync || Boolean(refreshing),
     lastUpdatedAt,
     activeAccount: activeAccount(),
+    switchingAccount,
     mobileRunning,
     activity: readCodexActivity(),
     accounts: [
@@ -107,7 +111,19 @@ function renderInstance(instance) {
   const spec = ACTIONS[instance.uuid];
   if (!spec) return;
   if (spec.mobile) {
-    api.setStateIcon(instance.context, mobileRunning ? 0 : 1, 'CELULAR');
+    // The icon shows the action that pressing the key will perform.
+    api.setStateIcon(instance.context, mobileRunning ? 1 : 0, 'CELULAR');
+    return;
+  }
+
+  if (spec.switchAccount) {
+    const active = activeAccount();
+    const state = switchingAccount === spec.switchAccount
+      ? 2
+      : active === spec.switchAccount
+        ? 1
+        : 0;
+    api.setStateIcon(instance.context, state);
     return;
   }
 
@@ -192,6 +208,48 @@ async function refresh(showFeedback = false) {
   }
 }
 
+
+async function performAccountSwitch(id, { showToast = true } = {}) {
+  if (switchingAccount) throw new Error('Ja existe uma troca de conta em andamento.');
+
+  const label = id === 'jey' ? 'JEY' : 'AMERICANO';
+  if (activeAccount() === id) {
+    renderAll();
+    if (showToast) api.toast(label + ' ja esta ativo');
+    return {
+      ok: true,
+      activeAccount: id,
+      alreadyActive: true,
+      vscodeWasRunning: false,
+      vscodeRestarted: false,
+      reopenedTargets: [],
+    };
+  }
+
+  switchingAccount = id;
+  renderAll();
+  if (showToast) api.toast('Trocando para ' + label + '...');
+  log('account switch start account=' + id);
+
+  try {
+    const result = await switchCodexAccount(id);
+    await refresh(true);
+    log('account switch finished account=' + id + ' restarted=' + result.vscodeRestarted + ' projects=' + result.reopenedTargets.length);
+
+    if (showToast) {
+      const suffix = result.vscodeRestarted
+        ? ' • VS Code reiniciado' + (result.reopenedTargets.length ? ' • ' + result.reopenedTargets.length + ' projeto(s)' : '')
+        : '';
+      api.toast(label + ' ativo' + suffix);
+    }
+
+    return result;
+  } finally {
+    switchingAccount = null;
+    renderAll();
+  }
+}
+
 api.onAdd((message) => {
   log('onAdd uuid=' + message.uuid + ' actionid=' + message.actionid + ' key=' + message.key);
   if (!specFor(message)) return;
@@ -226,6 +284,17 @@ api.onClear((message) => {
 
 api.onRun((message) => {
   const spec = ACTIONS[message?.uuid];
+
+  if (spec?.switchAccount) {
+    void performAccountSwitch(spec.switchAccount).catch((error) => {
+      const detail = error instanceof Error ? error.message : String(error);
+      log('account switch failed account=' + spec.switchAccount + ' error=' + detail);
+      try { api.showAlert(message.context); } catch {}
+      api.toast('Falha ao trocar Codex: ' + detail);
+    });
+    return;
+  }
+
   if (spec?.mobile) {
     if (mobileRunning) {
       stopMobile();
@@ -256,7 +325,7 @@ api.connect(PLUGIN_UUID);
 function updateMobileIcons() {
   for (const instance of instances.values()) {
     if (ACTIONS[instance.uuid]?.mobile) {
-      try { api.setStateIcon(instance.context, mobileRunning ? 0 : 1, 'CELULAR'); } catch {}
+      try { api.setStateIcon(instance.context, mobileRunning ? 1 : 0, 'CELULAR'); } catch {}
     }
   }
 }
@@ -268,8 +337,7 @@ function startMobile() {
     refresh,
     switchAccount: async (id) => {
       log('mobile switch requested account=' + id);
-      const result = await switchCodexAccount(id);
-      await refresh(true);
+      const result = await performAccountSwitch(id, { showToast: false });
       log('mobile switch finished account=' + id + ' restarted=' + result.vscodeRestarted);
       return {
         ...result,

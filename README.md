@@ -13,8 +13,11 @@ Inclui:
 - refresh automático e manual;
 - estados SYNC, STALE, LOGIN e OFFLINE;
 - painel mobile acessível pela rede local;
-- troca de conta pelo celular;
-- regra de não abrir o VS Code quando ele estiver fechado.
+- troca de conta pelo celular e por teclas dedicadas no Ulanzi;
+- feedback visual de conta inativa, ativa e `TROCANDO`;
+- reinício do VS Code preservando/reabrindo as pastas e workspaces detectados;
+- regra de não abrir o VS Code quando ele estiver fechado;
+- botão mobile com affordance corrigida: iniciar quando parado, `X` para parar quando rodando.
 
 ## Executar
 
@@ -25,7 +28,7 @@ npm run build
 npm run install:ulanzi
 ```
 
-Depois de instalar, reinicie completamente o Ulanzi Studio. Arraste **ABRIR NO CELULAR** para uma tecla e pressione uma vez. Isso inicia o servidor apenas quando você quiser acompanhar o Codex; pressione novamente para pará-lo.
+Depois de instalar, reinicie completamente o Ulanzi Studio. O plugin agora expõe **USAR JEY**, **USAR AMERICANO** e **ABRIR NO CELULAR**. Arraste as ações que quiser para as teclas. Pressione **USAR JEY/AMERICANO** para trocar a conta ativa; a tecla muda para `TROCANDO` durante a operação e para `ATIVO` ao concluir. Arraste **ABRIR NO CELULAR** para uma tecla e pressione uma vez. Isso inicia o servidor apenas quando você quiser acompanhar o Codex; pressione novamente para pará-lo.
 
 A URL é copiada automaticamente para o clipboard do Windows. Para consultar novamente sem precisar capturar o toast:
 

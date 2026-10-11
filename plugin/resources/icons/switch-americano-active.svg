@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="92" fill="#071813"/>
+  <rect x="34" y="34" width="444" height="444" rx="74" fill="#0d1d1a" stroke="#34d399" stroke-width="14"/>
+  <circle cx="409" cy="102" r="48" fill="#34d399"/>
+  <path d="M387 102l15 16 30-35" fill="none" stroke="#052e22" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M126 178l-58 78 58 78" fill="none" stroke="#6ee7b7" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M386 178l58 78-58 78" fill="none" stroke="#6ee7b7" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="315" text-anchor="middle" font-family="Arial, sans-serif" font-size="218" font-weight="800" fill="#ecfdf5">A</text>
+  <text x="256" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="44" font-weight="800" letter-spacing="4" fill="#34d399">ATIVO</text>
+</svg>
