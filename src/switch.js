@@ -126,6 +126,7 @@ function targetsFromStorage(file) {
   for (const entry of entries) {
     const candidates = [
       entry?.workspace?.configPath,
+      entry?.workspaceIdentifier?.configURIPath,
       entry?.workspace,
       entry?.workspaceUri,
       entry?.folder,
@@ -143,7 +144,9 @@ function captureVsCodeTargets() {
   const appData = process.env.APPDATA || '';
   const files = [
     path.join(appData, 'Code', 'storage.json'),
+    path.join(appData, 'Code', 'User', 'globalStorage', 'storage.json'),
     path.join(appData, 'Code - Insiders', 'storage.json'),
+    path.join(appData, 'Code - Insiders', 'User', 'globalStorage', 'storage.json'),
   ];
 
   const seen = new Set();
