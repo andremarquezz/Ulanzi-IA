@@ -209,6 +209,19 @@ async function closeAllVsCode(run, progress) {
   return count;
 }
 
+async function inspectVisibleVsCodeWindows() {
+  const response = await execFileAsync('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-ExecutionPolicy', 'Bypass',
+    '-File', closeScript,
+    '-Mode', 'list',
+  ], { encoding: 'utf8', windowsHide: true, timeout: 18000, maxBuffer: 1024 * 1024 });
+
+  const result = JSON.parse(response.stdout.trim());
+  return Array.isArray(result.windows) ? result.windows : [];
+}
+
 async function launchCode(exe, args) {
   await new Promise((resolve, reject) => {
     const child = spawn(exe, args, {
@@ -253,15 +266,29 @@ async function reopenVsCode(run, targets, expectedCount, progress) {
     writeLog(run, 'reopen-request', 'Native window/session restoration requested.');
   }
 
-  // Distinguish a successful spawn from an editor that actually started.
-  for (let attempt = 0; attempt < 20; attempt++) {
-    if (await isVsCodeRunning()) {
-      writeLog(run, 'reopen-ok', 'Code.exe detected after relaunch.');
-      return { requested: explicit ? targets : [], restoreMode: explicit ? 'explicit' : 'native' };
+  // Check real editor windows, not just Code.exe background processes.
+  // A launch is not considered successful when only one of three windows returns.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await wait(attempt === 0 ? 3500 : 4500);
+
+    try {
+      const opened = await inspectVisibleVsCodeWindows();
+      writeLog(run, 'reopen-check', 'attempt=' + (attempt + 1) + ' visibleWindows=' + opened.length + ' expected=' + expectedCount);
+      if (opened.length >= expectedCount) {
+        writeLog(run, 'reopen-ok', 'All ' + expectedCount + ' VS Code windows detected.');
+        return { requested: explicit ? targets : [], restoreMode: explicit ? 'explicit' : 'native' };
+      }
+    } catch (error) {
+      writeLog(run, 'reopen-check-error', error.message);
     }
-    await wait(400);
   }
-  throw new AccountSwitchError('REOPEN_TIMEOUT', 'Conta trocada, mas o VS Code nao iniciou. Abra-o normalmente.');
+
+  const codeAlive = await isVsCodeRunning();
+  const reason = codeAlive
+    ? 'O VS Code iniciou, mas nao foi possivel confirmar todas as ' + expectedCount + ' janelas. Confira os projetos e consulte o log.'
+    : 'A conta foi trocada, mas o VS Code nao iniciou. Abra-o normalmente e consulte o log.';
+
+  throw new AccountSwitchError(codeAlive ? 'REOPEN_INCOMPLETE' : 'REOPEN_TIMEOUT', reason);
 }
 
 export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
