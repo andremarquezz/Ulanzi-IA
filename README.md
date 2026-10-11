@@ -42,3 +42,24 @@ O celular precisa estar na mesma rede Wi-Fi do PC. A aba **CODEX** acompanha eve
 ## Instalar no iPhone
 
 Abra a URL do painel no Safari, toque em Compartilhar e escolha **Adicionar à Tela de Início**. O painel possui manifest, ícone e service worker para abrir como aplicativo em tela cheia. A instalação continua funcionando somente enquanto o PC estiver ligado e na mesma rede local.
+
+## Troca de conta e diagnostico
+
+As teclas USAR JEY e USAR AMERICANO exibem o nome da conta, um estado visual de progresso e ERRO quando necessario.
+O plugin tenta fechar todas as janelas do VS Code com seguranca. Se alguma nao fechar, a troca e cancelada.
+A reabertura verifica as janelas reais, e nao somente a existencia do processo Code.exe.
+
+Para conferir o log da troca no PowerShell:
+
+```powershell
+Get-Content "$env:LOCALAPPDATA\CodexLimits\switch.log" -Tail 80
+```
+
+Esse arquivo registra quantas janelas foram detectadas, quais etapas executaram e o motivo de eventual falha.
+Se os projetos nao forem recuperados automaticamente, confira window.restoreWindows = all.
+
+Execute `npm test` e `npm run build` para as validacoes locais.
+
+### Restauracao de janelas apos trocar a conta
+
+O Codex Limits tenta reabrir as pastas abertas sem solicitar login novamente. Para nao deixar o usuario esperando por varios minutos, a restauracao agora tem limites de espera e **nao repete indefinidamente**. O VS Code inicia sem `windowsHide` (somente os auxiliares de console rodam ocultos). Se apenas uma janela for reaberta, a conta continua trocada e o painel mostra uma mensagem informando `1/2 janelas`; a outra pasta pode ser aberta manualmente. Consulte `switch.log` para diagnostico. O PR ainda requer teste real das duas janelas no PC.
