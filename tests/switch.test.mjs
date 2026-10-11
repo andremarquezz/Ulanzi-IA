@@ -8,19 +8,29 @@ import test from 'node:test';
 import { switchIconSvg } from '../src/switch-icons.js';
 import { targetsFromStorage } from '../src/switch.js';
 
-test('Codex buttons identify the account and status', () => {
-  const cases = [
-    ['jey', 'active', 'JEY', 'ATIVO'],
-    ['americano', 'switching', 'AMERICANO', 'TROCANDO'],
-    ['jey', 'error', 'JEY', 'ERRO'],
-  ];
+test('Codex buttons show graphical identity and state without large text', () => {
+  const jey = switchIconSvg('jey', 'idle');
+  const americano = switchIconSvg('americano', 'idle');
+  const active = switchIconSvg('jey', 'active');
+  const switching = switchIconSvg('americano', 'switching', 'FECHANDO');
+  const error = switchIconSvg('americano', 'error');
 
-  for (const [account, status, expectedName, expectedStatus] of cases) {
-    const svg = switchIconSvg(account, status);
+  for (const svg of [jey, americano, active, switching, error]) {
     assert.match(svg, /<svg/);
-    assert.ok(svg.includes(expectedName), 'account label must be included in the rendered image');
-    assert.ok(svg.includes(expectedStatus), 'status must be included in the rendered image');
+    assert.match(svg, /<path d=/);
+    assert.equal((svg.match(/<text /g) || []).length, 1, 'only a small monogram is allowed');
+    assert.doesNotMatch(svg, /CODEX|SELECIONAR|TROCANDO|ATIVO|ERRO|AMERICANO|JEY/);
   }
+
+  assert.match(jey, />J<\\/text>/);
+  assert.match(americano, />A<\\/text>/);
+  assert.match(jey, /#38cfff/i);
+  assert.match(americano, /#80e86a/i);
+  assert.match(active, /#34d399/i);
+  assert.match(switching, /#fbbf24/i);
+  assert.match(error, /#fb556c/i);
+  assert.notEqual(switchIconSvg('jey', 'switching', 'FECHANDO'),
+    switchIconSvg('jey', 'switching', 'ABRINDO'), 'phase indicator should change');
 });
 
 test('VS Code window snapshot reads all folder and workspace URI formats', () => {
