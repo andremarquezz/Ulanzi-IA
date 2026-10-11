@@ -214,11 +214,13 @@ async function closeAllVsCode(run, progress) {
         'Ainda existem ' + remaining + ' janela(s) do VS Code abertas. Salve os arquivos e feche os dialogos pendentes.',
       );
     }
-    throw new AccountSwitchError(
+    const error = new AccountSwitchError(
       'BACKGROUND_PROCESS',
       'As janelas fecharam, mas ' + backgroundCount
       + ' processo(s) Code.exe continuaram em segundo plano. A conta nao foi alterada. Veja o switch.log.',
     );
+    error.windowsBefore = count;
+    throw error;
   }
 
   return count;
@@ -345,7 +347,23 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
     let originalWindows = 0;
     if (wasRunning) {
       progress('Identificando janelas abertas...');
-      originalWindows = await closeAllVsCode(run, progress);
+      try {
+        originalWindows = await closeAllVsCode(run, progress);
+      } catch (error) {
+        // The auth has not been modified. If every editor window did close
+        // but a background process stayed alive, try restoring the original
+        // projects so a failed switch does not leave the desktop empty.
+        if (error.code === 'BACKGROUND_PROCESS' && error.windowsBefore > 0) {
+          writeLog(run, 'rollback', 'Background process remained. Reopening unchanged account.');
+          try {
+            await reopenVsCode(run, targetsBeforeClose, error.windowsBefore, progress);
+            writeLog(run, 'rollback-ok', 'Original Codex account was kept and editors were reopened.');
+          } catch (restoreError) {
+            writeLog(run, 'rollback-error', restoreError.message || String(restoreError));
+          }
+        }
+        throw error;
+      }
       // Never modify the auth if the editor is still running.
       if (await isVsCodeRunning()) {
         throw new AccountSwitchError('PROCESS_STILL_RUNNING', 'Ainda existe Code.exe em execucao. Troca cancelada.');
