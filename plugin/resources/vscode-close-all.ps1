@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('close')]
+    [ValidateSet('close', 'list')]
     [string]$Mode = 'close',
     [int]$TimeoutSeconds = 35
 )
@@ -90,6 +90,16 @@ public static class CodexWindowTools {
 '@ -ErrorAction Stop
 
 $initial = @([CodexWindowTools]::List())
+if ($Mode -eq 'list') {
+    [PSCustomObject]@{
+        success = $true
+        windows = @($initial | ForEach-Object {
+            [PSCustomObject]@{ pid = $_.Pid; title = $_.Title }
+        })
+    } | ConvertTo-Json -Compress -Depth 5
+    exit 0
+}
+
 foreach ($window in $initial) {
     [CodexWindowTools]::Close($window.Handle)
 }
