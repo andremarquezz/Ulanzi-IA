@@ -281,10 +281,16 @@ async function performAccountSwitch(id, { showToast = true } = {}) {
       + ' restoreMode=' + (result.restoreMode || 'none'));
 
     if (showToast) {
-      const suffix = result.vscodeRestarted
-        ? ' • VS Code reiniciado (' + (result.restoreMode || 'nativo') + ')'
-        : '';
-      api.toast(label + ' ativo' + suffix);
+      if (result.restorePartial) {
+        api.toast(label + ' ATIVO • '
+          + result.windowsRestored + '/' + result.windowsExpected
+          + ' janelas reabertas. Abra o projeto restante manualmente.');
+      } else if (result.restoreFailed) {
+        api.toast(label + ' ATIVO • Nao foi possivel reabrir o VS Code. Abra um projeto manualmente.');
+      } else {
+        const suffix = result.vscodeRestarted ? ' • projetos restaurados' : '';
+        api.toast(label + ' ativo' + suffix);
+      }
     }
 
     // Quota refresh is not a prerequisite for successful account switching.
