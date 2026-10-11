@@ -22,8 +22,8 @@ test('Codex buttons show graphical identity and state without large text', () =>
     assert.doesNotMatch(svg, /CODEX|SELECIONAR|TROCANDO|ATIVO|ERRO|AMERICANO|JEY/);
   }
 
-  assert.match(jey, />J<\\/text>/);
-  assert.match(americano, />A<\\/text>/);
+  assert.ok(jey.includes('>J</text>'));
+  assert.ok(americano.includes('>A</text>'));
   assert.match(jey, /#38cfff/i);
   assert.match(americano, /#80e86a/i);
   assert.match(active, /#34d399/i);
