@@ -245,7 +245,10 @@ async function launchCode(exe, args) {
     const child = spawn(exe, args, {
       detached: true,
       stdio: 'ignore',
-      windowsHide: true,
+      // Code.exe is a GUI application. Hiding its startup window can prevent
+      // newly created editor windows from becoming visible in this host.
+      // Only console helpers (PowerShell/tasklist) must use windowsHide:true.
+      windowsHide: false,
       env: { ...process.env, CODEX_HOME: liveHome },
     });
     child.once('error', reject);
@@ -254,6 +257,22 @@ async function launchCode(exe, args) {
       resolve();
     });
   });
+}
+
+async function waitForVisibleVsCodeWindows(minimumCount, timeoutSeconds) {
+  const seconds = Math.max(1, Math.ceil(timeoutSeconds));
+  const response = await execFileAsync('powershell.exe', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-ExecutionPolicy', 'Bypass',
+    '-File', closeScript,
+    '-Mode', 'wait',
+    '-MinimumCount', String(minimumCount),
+    '-TimeoutSeconds', String(seconds),
+  ], { encoding: 'utf8', windowsHide: true, timeout: seconds * 1000 + 7500, maxBuffer: 1024 * 1024 });
+
+  const result = JSON.parse(response.stdout.trim());
+  return Array.isArray(result.windows) ? result.windows : [];
 }
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -271,24 +290,20 @@ async function reopenVsCode(run, targets, expectedCount, progress) {
     expectedCount,
     openTarget: (target) => launchCode(exe, [...common, '--new-window', target]),
     openNative: () => launchCode(exe, common),
-    listWindows: inspectVisibleVsCodeWindows,
-    pause: wait,
+    waitForWindows: waitForVisibleVsCodeWindows,
     log: (step, detail) => writeLog(run, step, detail),
   });
 
   if (!result.restored) {
-    const error = new AccountSwitchError(
-      'REOPEN_INCOMPLETE',
-      'A conta foi trocada, mas so ' + result.visibleWindows
-        + ' de ' + result.expectedWindows + ' janela(s) do VS Code foram restauradas.'
-        + ' Verifique o log para identificar os projetos pendentes.',
-    );
-    error.windowsRestored = result.visibleWindows;
-    error.windowsExpected = result.expectedWindows;
-    throw error;
+    // The account is already switched. A missing second window is a recoverable
+    // editor issue, not an authentication failure. Do not close the open editor
+    // or block on further retries.
+    writeLog(run, result.partial ? 'RESTORE_PARTIAL' : 'RESTORE_FAILED',
+      'activeCodexUnchanged=' + activeAccount()
+      + ' reopened=' + result.visibleWindows + '/' + result.expectedWindows);
+  } else {
+    writeLog(run, 'reopen-ok', 'Restored ' + result.visibleWindows + ' VS Code windows.');
   }
-
-  writeLog(run, 'reopen-ok', 'Restored ' + result.visibleWindows + ' VS Code windows.');
   return result;
 }
 
@@ -398,6 +413,10 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
       vscodeRestarted: originalWindows > 0,
       reopenedTargets: restart.requested,
       restoreMode: restart.restoreMode,
+      windowsRestored: restart.visibleWindows ?? 0,
+      windowsExpected: restart.expectedWindows ?? originalWindows,
+      restorePartial: Boolean(restart.partial),
+      restoreFailed: originalWindows > 0 && restart.restored === false && !restart.partial,
     };
   } catch (error) {
     // Restart errors happen after auth.json was replaced. Do not imply that
