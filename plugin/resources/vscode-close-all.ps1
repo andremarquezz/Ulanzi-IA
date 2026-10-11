@@ -1,7 +1,8 @@
 param(
-    [ValidateSet('close', 'list')]
+    [ValidateSet('close', 'list', 'wait')]
     [string]$Mode = 'close',
-    [int]$TimeoutSeconds = 35
+    [int]$TimeoutSeconds = 35,
+    [int]$MinimumCount = 1
 )
 
 $ErrorActionPreference = 'Stop'
@@ -88,6 +89,23 @@ public static class CodexWindowTools {
     }
 }
 '@ -ErrorAction Stop
+
+if ($Mode -eq 'wait') {
+    $deadline = (Get-Date).AddSeconds([Math]::Max(0, $TimeoutSeconds))
+    $windows = @([CodexWindowTools]::List())
+    while ($windows.Count -lt $MinimumCount -and (Get-Date) -lt $deadline) {
+        Start-Sleep -Milliseconds 250
+        $windows = @([CodexWindowTools]::List())
+    }
+
+    [PSCustomObject]@{
+        success = $windows.Count -ge $MinimumCount
+        windows = @($windows | ForEach-Object {
+            [PSCustomObject]@{ pid = $_.Pid; title = $_.Title }
+        })
+    } | ConvertTo-Json -Compress -Depth 5
+    exit 0
+}
 
 $initial = @([CodexWindowTools]::List())
 if ($Mode -eq 'list') {
