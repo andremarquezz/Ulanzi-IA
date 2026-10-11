@@ -112,7 +112,7 @@ function uriOrPath(value) {
   return path.isAbsolute(raw) ? path.normalize(raw) : null;
 }
 
-function targetsFromStorage(file) {
+export function targetsFromStorage(file) {
   let json;
   try { json = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; }
 
