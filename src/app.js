@@ -54,7 +54,28 @@ let mobileRunning = false;
 let switchingAccount = null;
 let switchingStage = '';
 let switchError = null;
+let switchErrorTimeout = null;
 const lastGood = new Map();
+
+function showTemporarySwitchError(errorInfo) {
+  switchError = errorInfo;
+  if (switchErrorTimeout) clearTimeout(switchErrorTimeout);
+  renderAll();
+  // Error is an acknowledgement, not the persistent account state.
+  switchErrorTimeout = setTimeout(() => {
+    if (switchError === errorInfo) {
+      switchError = null;
+      renderAll();
+    }
+    switchErrorTimeout = null;
+  }, 6500);
+}
+
+function clearSwitchError() {
+  switchError = null;
+  if (switchErrorTimeout) clearTimeout(switchErrorTimeout);
+  switchErrorTimeout = null;
+}
 
 try {
   await initRenderer();
@@ -221,7 +242,7 @@ async function performAccountSwitch(id, { showToast = true } = {}) {
 
   const label = id === 'jey' ? 'JEY' : 'AMERICANO';
   if (activeAccount() === id) {
-    switchError = null;
+    clearSwitchError();
     renderAll();
     if (showToast) api.toast(label + ' ja esta ativo');
     return {
@@ -236,7 +257,7 @@ async function performAccountSwitch(id, { showToast = true } = {}) {
 
   switchingAccount = id;
   switchingStage = 'INICIANDO';
-  switchError = null;
+  clearSwitchError();
   renderAll();
   if (showToast) api.toast('Trocando para ' + label + '...');
   log('account switch start account=' + id + ' details=' + SWITCH_LOG_FILE);
@@ -272,9 +293,33 @@ async function performAccountSwitch(id, { showToast = true } = {}) {
   } catch (error) {
     const code = error?.code || 'UNKNOWN';
     const detail = error instanceof Error ? error.message : String(error);
-    switchError = { account: id, code, detail, time: new Date().toISOString() };
-    log('account switch failed account=' + id + ' code=' + code + ' error=' + detail);
-    if (showToast) api.toast('ERRO ' + code + ': ' + detail + ' | Log: ' + SWITCH_LOG_FILE);
+    const selected = activeAccount();
+    const accountChanged = error?.accountChanged === true || selected === id;
+
+    const errorInfo = {
+      account: id,
+      code,
+      detail,
+      accountChanged,
+      activeAccount: selected,
+      time: new Date().toISOString(),
+    };
+    showTemporarySwitchError(errorInfo);
+
+    log('account switch failed account=' + id + ' code=' + code
+      + ' accountChanged=' + accountChanged + ' activeAccount=' + selected
+      + ' error=' + detail);
+
+    if (showToast) {
+      if (accountChanged) {
+        api.toast(label + ' ATIVO • VS Code incompleto: ' + detail
+          + ' | Log: ' + SWITCH_LOG_FILE);
+      } else {
+        api.toast('Troca NAO aplicada • ' + code + ': ' + detail
+          + ' | Log: ' + SWITCH_LOG_FILE);
+      }
+    }
+
     throw error;
   } finally {
     switchingAccount = null;
