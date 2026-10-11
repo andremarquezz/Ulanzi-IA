@@ -194,15 +194,30 @@ async function closeAllVsCode(run, progress) {
 
   const count = outcome.windowsBefore?.length || 0;
   const remaining = outcome.windowsRemaining?.length || 0;
-  writeLog(run, 'windows', 'before=' + count + ' remaining=' + remaining + ' processesRemaining=' + outcome.processesRemaining);
+  const backgroundCount = outcome.processesRemaining || 0;
+  writeLog(run, 'windows', 'before=' + count
+    + ' remaining=' + remaining
+    + ' processesRemaining=' + backgroundCount
+    + ' backgroundStops=' + (outcome.backgroundStopAttempts || 0)
+    + ' remainingPids=' + JSON.stringify(outcome.backgroundProcessesRemaining || []));
   for (const window of outcome.windowsBefore || []) {
     writeLog(run, 'window', window.title);
   }
+  for (const detail of outcome.backgroundErrors || []) {
+    writeLog(run, 'background-stop-error', detail);
+  }
 
   if (!outcome.success) {
+    if (remaining > 0) {
+      throw new AccountSwitchError(
+        'WINDOWS_OPEN',
+        'Ainda existem ' + remaining + ' janela(s) do VS Code abertas. Salve os arquivos e feche os dialogos pendentes.',
+      );
+    }
     throw new AccountSwitchError(
-      'WINDOWS_OPEN',
-      'Ainda existem ' + remaining + ' janela(s) ou processo(s) do VS Code. Salve os arquivos e feche os dialogos pendentes.',
+      'BACKGROUND_PROCESS',
+      'As janelas fecharam, mas ' + backgroundCount
+      + ' processo(s) Code.exe continuaram em segundo plano. A conta nao foi alterada. Veja o switch.log.',
     );
   }
 
