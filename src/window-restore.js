@@ -1,130 +1,102 @@
 import path from 'node:path';
 
-/**
- * The Code.exe process becoming available does not mean its first editor window
- * is ready. Sending the next invocation immediately can lose subsequent windows.
- * This helper waits for each requested project before asking for the next.
- */
 export function windowMatchesTarget(window, target) {
   if (!target) return false;
-  const basename = path.basename(target)
-    .replace(/\.code-workspace$/i, '')
-    .trim()
-    .toLocaleLowerCase();
-  const title = String(window?.title || '').toLocaleLowerCase();
-  if (!basename || !title) return false;
-  return title === basename
+  const basename = path.basename(target).replace(/\.code-workspace$/i, '').toLowerCase();
+  const title = String(window?.title || '').toLowerCase();
+  return Boolean(basename) && (
+    title === basename
     || title.includes(' - ' + basename + ' - ')
     || title.startsWith(basename + ' - ')
     || title.endsWith(' - ' + basename)
-    || title.includes('[' + basename + ']');
+  );
 }
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
+/**
+ * Relaunch at most once per project, with one native fallback if the first
+ * command fails. Do not turn a successful auth switch into a minute-long error.
+ * Window-waiting is delegated to one persistent PowerShell process per launch,
+ * rather than compiling the Win32 helper on every poll.
+ */
 export async function restoreProjectWindows({
   targets,
   expectedCount,
   openTarget,
   openNative,
-  listWindows,
-  pause = sleep,
+  waitForWindows,
   log = () => {},
-  pollAttempts = 12,
-  pollDelayMs = 850,
+  firstWaitSeconds = 8,
+  nextWaitSeconds = 5,
 }) {
   const expected = Math.max(0, Number(expectedCount) || 0);
   const explicit = targets.length >= expected && expected > 0;
+  const selected = explicit ? targets : targets.slice(0, 1);
+  const mode = explicit ? 'explicit' : 'native';
+  log('restore', 'windowsBefore=' + expected + ' capturedTargets=' + targets.length
+    + ' mode=' + mode);
 
-  const inspect = async () => {
+  let windows = [];
+  let triedFallback = false;
+  const wait = async (count, seconds) => {
     try {
-      return await listWindows();
+      const observed = await waitForWindows(count, seconds);
+      windows = Array.isArray(observed) ? observed : [];
     } catch (error) {
-      log('reopen-check-error', error?.message || String(error));
-      return [];
+      log('reopen-wait-error', error?.message || String(error));
+      windows = [];
     }
-  };
-
-  const pollFor = async (target, minimumCount) => {
-    let windows = [];
-    for (let n = 0; n < pollAttempts; n++) {
-      await pause(pollDelayMs);
-      windows = await inspect();
-
-      // Require a newly visible window before dispatching the next project.
-      // Match the window title when possible, but support localized titles and
-      // other VS Code window naming schemes through the count fallback.
-      if (windows.length >= minimumCount) {
-        return windows;
-      }
-    }
+    log('reopen-observed', 'visible=' + windows.length + ' expected=' + count
+      + ' titles=' + JSON.stringify(windows.map((w) => w.title)));
     return windows;
   };
 
-  log('restore', 'windowsBefore=' + expected
-    + ' capturedTargets=' + targets.length
-    + ' mode=' + (explicit ? 'explicit' : 'native'));
-
-  let windows = await inspect();
-
   if (explicit) {
-    let processed = 0;
-    // Do not launch a second VS Code instance while the first is booting.
-    // Each --new-window command is awaited until a corresponding editor opens.
-    for (const target of targets) {
-      processed++;
-      if (windows.some((window) => windowMatchesTarget(window, target))) {
-        log('reopen-skip', target + ' already visible.');
+    // Wait for the first editor to be *visible* before sending the next folder.
+    // A premature second Code.exe may be swallowed by the first-startup process.
+    for (let index = 0; index < selected.length; index++) {
+      const target = selected[index];
+      if (windows.some((w) => windowMatchesTarget(w, target))) {
+        log('reopen-skip', target + ' already open');
         continue;
       }
+      const required = windows.length + 1;
+      log('reopen-request', target + ' index=' + index);
+      await openTarget(target);
+      await wait(required, index === 0 ? firstWaitSeconds : nextWaitSeconds);
 
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        const minimumCount = Math.max(windows.length + 1, processed);
-        log('reopen-request', target + ' attempt=' + attempt);
-        await openTarget(target);
-        windows = await pollFor(target, minimumCount);
-        log('reopen-observed', 'target=' + target
-          + ' attempt=' + attempt
-          + ' visibleWindows=' + windows.length);
-
-        if (windows.length >= minimumCount) {
-          break;
-        }
-        if (attempt === 1) log('reopen-retry', target + ' did not create a visible editor.');
+      // One fallback only. No repeated 20-second retries.
+      if (windows.length < required && index === 0) {
+        log('reopen-fallback', 'First editor missing. Request native restore.');
+        await openNative();
+        triedFallback = true;
+        await wait(1, 4);
       }
+      if (windows.length < 1) break;
     }
   } else {
-    log('reopen-request', 'Native session restoration requested.');
+    log('reopen-request', 'Native session restore');
     await openNative();
-    windows = await pollFor(null, Math.max(1, expected));
-    // When the native restore is incomplete but we know some folders, try to
-    // recover each missing folder explicitly without killing current windows.
-    if (windows.length < expected && targets.length > 0) {
-      for (const target of targets) {
-        if (windows.some((window) => windowMatchesTarget(window, target))) continue;
-        const minimumCount = windows.length + 1;
-        log('reopen-recover', target);
-        await openTarget(target);
-        windows = await pollFor(target, minimumCount);
-      }
+    await wait(1, firstWaitSeconds);
+    if (windows.length === 0 && selected.length) {
+      log('reopen-fallback', 'Native restore did not produce a window. Opening known project.');
+      await openTarget(selected[0]);
+      triedFallback = true;
+      await wait(1, 4);
     }
   }
 
-  // One more settling period for delayed extension hosts / restored windows.
-  for (let i = 0; i < 5 && windows.length < expected; i++) {
-    await pause(pollDelayMs);
-    windows = await inspect();
-  }
-
-  log('reopen-check', 'visibleWindows=' + windows.length + ' expected=' + expected
-    + ' titles=' + JSON.stringify(windows.map((w) => w.title)));
   const restored = windows.length >= expected;
+  const partial = expected > 0 && !restored && windows.length > 0;
+  log(restored ? 'reopen-ok' : partial ? 'reopen-partial' : 'reopen-missing',
+    'visible=' + windows.length + ' expected=' + expected + ' fallback=' + triedFallback);
 
   return {
     restored,
+    partial,
     visibleWindows: windows.length,
     expectedWindows: expected,
-    requested: explicit ? targets : [],
-    restoreMode: explicit ? 'explicit' : 'native',
+    requested: selected,
+    restoreMode: mode,
+    fallbackUsed: triedFallback,
   };
 }
