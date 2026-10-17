@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="92" fill="#1b1305"/>
+  <rect x="34" y="34" width="444" height="444" rx="74" fill="#211a0c" stroke="#f59e0b" stroke-width="14"/>
+  <path d="M109 209a158 158 0 0 1 270-73" fill="none" stroke="#fbbf24" stroke-width="25" stroke-linecap="round"/>
+  <path d="M375 90l26 70-75-13" fill="#fbbf24"/>
+  <path d="M403 303a158 158 0 0 1-270 73" fill="none" stroke="#fbbf24" stroke-width="25" stroke-linecap="round"/>
+  <path d="M137 422l-26-70 75 13" fill="#fbbf24"/>
+  <text x="256" y="315" text-anchor="middle" font-family="Arial, sans-serif" font-size="205" font-weight="800" fill="#fff7ed">J</text>
+  <text x="256" y="439" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="800" letter-spacing="2" fill="#fbbf24">TROCANDO</text>
+</svg>

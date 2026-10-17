@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="92" fill="#08111f"/>
+  <rect x="34" y="34" width="444" height="444" rx="74" fill="#0d1728" stroke="#2563eb" stroke-width="10"/>
+  <path d="M126 178l-58 78 58 78" fill="none" stroke="#60a5fa" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M386 178l58 78-58 78" fill="none" stroke="#60a5fa" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="315" text-anchor="middle" font-family="Arial, sans-serif" font-size="230" font-weight="800" fill="#eaf3ff">J</text>
+  <text x="256" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="800" letter-spacing="6" fill="#60a5fa">JEY</text>
+</svg>

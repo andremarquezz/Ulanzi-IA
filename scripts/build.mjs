@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { build } from 'esbuild';
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
 
 const root = process.cwd();
 const name = 'com.ulanzi.ulanzistudio.jeycodex.ulanziPlugin';
@@ -29,6 +30,25 @@ fs.cpSync(path.join(root, 'plugin', 'resources'), path.join(out, 'resources'), {
 
 const wasm = path.join(root, 'node_modules', '@resvg', 'resvg-wasm', 'index_bg.wasm');
 fs.copyFileSync(wasm, path.join(out, 'resources', 'resvg.wasm'));
+await initWasm(fs.readFileSync(wasm));
+
+const generatedIcons = [
+  'mobile-running',
+  'mobile-stopped',
+  'switch-jey-idle',
+  'switch-jey-active',
+  'switch-jey-switching',
+  'switch-americano-idle',
+  'switch-americano-active',
+  'switch-americano-switching',
+];
+
+for (const name of generatedIcons) {
+  const svg = fs.readFileSync(path.join(out, 'resources', 'icons', name + '.svg'), 'utf8');
+  const png = new Resvg(svg, { fitTo: { mode: 'width', value: 144 } }).render().asPng();
+  fs.writeFileSync(path.join(out, 'resources', 'icons', name + '.png'), png);
+}
+
 fs.cpSync(path.join(root, 'node_modules', 'ws'), path.join(out, 'node_modules', 'ws'), { recursive: true });
 
 for (const required of [
@@ -38,6 +58,7 @@ for (const required of [
   'resources/fonts/IBMPlexSans-Regular.ttf',
   'resources/fonts/IBMPlexSans-Bold.ttf',
   'resources/icons/usage.png',
+  ...generatedIcons.map((name) => 'resources/icons/' + name + '.png'),
   'node_modules/ws',
 ]) {
   if (!fs.existsSync(path.join(out, required))) {
