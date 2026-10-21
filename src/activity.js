@@ -298,7 +298,51 @@ function compareCandidates(left, right) {
   return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
 }
 
-export function readCodexActivity() {
+const DASHBOARD_CACHE_MS = 2500;
+const MOBILE_SESSION_LIMIT = 20;
+let dashboardCache = null;
+let dashboardCachedAt = 0;
+
+function profileFromSource(source) {
+  const normalized = String(source || '').replace(/\\/g, '/').toLowerCase();
+  if (normalized.includes('/.codex-jey/')) return 'JEY';
+  if (normalized.includes('/.codex-americano/')) return 'AMERICANO';
+  return 'ATUAL';
+}
+
+function safeMessage(value) {
+  return String(value || '')
+    .replace(/(Bearer\s+)[^\s]+/gi, '$1[oculto]')
+    .replace(/\b(?:sk-(?:proj-)?|gh[pousr]_)[a-z0-9_-]{10,}\b/gi, '[credencial oculta]')
+    .replace(/((?:token|password|secret|api[_-]?key)\s*[:=]\s*)[^\s,"']+/gi, '$1[oculto]');
+}
+
+function mobileSession(candidate) {
+  return {
+    status: candidate.status,
+    message: safeMessage(candidate.message),
+    updatedAt: candidate.updatedAt,
+    active: candidate.active,
+    terminal: candidate.terminal,
+    stale: candidate.stale,
+    project: candidate.project,
+    sessionId: candidate.sessionId,
+    profile: profileFromSource(candidate.source),
+    events: (candidate.events || []).slice(0, 8).map((event) => ({
+      status: event.status,
+      message: safeMessage(event.message),
+      updatedAt: event.updatedAt,
+      terminal: event.terminal,
+    })),
+  };
+}
+
+export function readCodexDashboard({ force = false } = {}) {
+  const now = Date.now();
+  if (!force && dashboardCache && now - dashboardCachedAt < DASHBOARD_CACHE_MS) {
+    return dashboardCache;
+  }
+
   const files = codexRoots()
     .flatMap(recentJsonlFiles)
     .sort((a, b) => b.mtimeMs - a.mtimeMs)
@@ -309,27 +353,44 @@ export function readCodexActivity() {
     .filter(Boolean)
     .sort(compareCandidates);
 
-  const selected = candidates[0];
-  if (!selected) {
-    return {
-      status: 'stopped',
-      message: 'Nenhuma atividade do Codex encontrada',
-      active: false,
-      terminal: false,
-      stale: false,
-      project: '',
-      sessionId: '',
-      updatedAt: null,
-      source: '',
-      events: [],
-      sessionCount: 0,
-      activeSessionCount: 0,
-    };
-  }
+  const activeSessionCount = candidates.filter((candidate) => candidate.active).length;
+  const waitingSessionCount = candidates.filter((candidate) => candidate.active && candidate.status === 'waiting').length;
+  const sessions = candidates.slice(0, MOBILE_SESSION_LIMIT).map(mobileSession);
+  const selected = sessions[0];
+  const activity = selected
+    ? {
+        ...selected,
+        sessionCount: candidates.length,
+        activeSessionCount,
+        waitingSessionCount,
+      }
+    : {
+        status: 'stopped',
+        message: 'Nenhuma atividade do Codex encontrada',
+        active: false,
+        terminal: false,
+        stale: false,
+        project: '',
+        sessionId: '',
+        profile: '',
+        updatedAt: null,
+        events: [],
+        sessionCount: 0,
+        activeSessionCount: 0,
+        waitingSessionCount: 0,
+      };
 
-  return {
-    ...selected,
+  dashboardCache = {
+    activity,
+    sessions,
     sessionCount: candidates.length,
-    activeSessionCount: candidates.filter((candidate) => candidate.active).length,
+    activeSessionCount,
+    waitingSessionCount,
   };
+  dashboardCachedAt = now;
+  return dashboardCache;
+}
+
+export function readCodexActivity() {
+  return readCodexDashboard().activity;
 }
