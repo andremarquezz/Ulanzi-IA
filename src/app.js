@@ -6,7 +6,7 @@ import UlanziApi from './vendor/ulanzi-api/index.js';
 import { queryAllAccounts } from './codex.js';
 import { gaugeSvg, initRenderer, svgToDataUri } from './render.js';
 import { startMobileServer } from './mobile.js';
-import { readCodexActivity } from './activity.js';
+import { readCodexDashboard } from './activity.js';
 import { activeAccount, switchCodexAccount, SWITCH_LOG_FILE } from './switch.js';
 import { switchIconSvg } from './switch-icons.js';
 
@@ -115,16 +115,23 @@ function mobileAccount(id) {
 }
 
 function mobileState(port = Number(process.env.JEY_MOBILE_PORT || 3333)) {
+  const dashboard = readCodexDashboard();
   return {
     host: os.hostname(),
     port,
+    serverTime: new Date().toISOString(),
     syncing: manualSync || Boolean(refreshing),
     lastUpdatedAt,
     activeAccount: activeAccount(),
     switchingAccount,
+    switchingStage,
     switchError,
     mobileRunning,
-    activity: readCodexActivity(),
+    activity: dashboard.activity,
+    sessions: dashboard.sessions,
+    sessionCount: dashboard.sessionCount,
+    activeSessionCount: dashboard.activeSessionCount,
+    waitingSessionCount: dashboard.waitingSessionCount,
     accounts: [
       mobileAccount('jey'),
       mobileAccount('americano'),
