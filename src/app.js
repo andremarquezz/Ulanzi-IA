@@ -7,7 +7,8 @@ import { queryAllAccounts } from './codex.js';
 import { gaugeSvg, initRenderer, svgToDataUri } from './render.js';
 import { startMobileServer } from './mobile.js';
 import { readCodexActivity } from './activity.js';
-import { activeAccount, switchCodexAccount } from './switch.js';
+import { activeAccount, switchCodexAccount, SWITCH_LOG_FILE } from './switch.js';
+import { switchIconSvg } from './switch-icons.js';
 
 const PLUGIN_UUID = 'com.ulanzi.ulanzistudio.jeycodex';
 const REFRESH_MS = 30000;
@@ -51,7 +52,30 @@ let lastUpdatedAt = null;
 let mobile = null;
 let mobileRunning = false;
 let switchingAccount = null;
+let switchingStage = '';
+let switchError = null;
+let switchErrorTimeout = null;
 const lastGood = new Map();
+
+function showTemporarySwitchError(errorInfo) {
+  switchError = errorInfo;
+  if (switchErrorTimeout) clearTimeout(switchErrorTimeout);
+  renderAll();
+  // Error is an acknowledgement, not the persistent account state.
+  switchErrorTimeout = setTimeout(() => {
+    if (switchError === errorInfo) {
+      switchError = null;
+      renderAll();
+    }
+    switchErrorTimeout = null;
+  }, 6500);
+}
+
+function clearSwitchError() {
+  switchError = null;
+  if (switchErrorTimeout) clearTimeout(switchErrorTimeout);
+  switchErrorTimeout = null;
+}
 
 try {
   await initRenderer();
@@ -98,6 +122,7 @@ function mobileState(port = Number(process.env.JEY_MOBILE_PORT || 3333)) {
     lastUpdatedAt,
     activeAccount: activeAccount(),
     switchingAccount,
+    switchError,
     mobileRunning,
     activity: readCodexActivity(),
     accounts: [
@@ -119,11 +144,14 @@ function renderInstance(instance) {
   if (spec.switchAccount) {
     const active = activeAccount();
     const state = switchingAccount === spec.switchAccount
-      ? 2
-      : active === spec.switchAccount
-        ? 1
-        : 0;
-    api.setStateIcon(instance.context, state);
+      ? 'switching'
+      : switchError?.account === spec.switchAccount
+        ? 'error'
+        : active === spec.switchAccount
+          ? 'active'
+          : 'idle';
+    const svg = switchIconSvg(spec.switchAccount, state, switchingStage);
+    api.setBaseDataIcon(instance.context, svgToDataUri(svg));
     return;
   }
 
@@ -214,6 +242,7 @@ async function performAccountSwitch(id, { showToast = true } = {}) {
 
   const label = id === 'jey' ? 'JEY' : 'AMERICANO';
   if (activeAccount() === id) {
+    clearSwitchError();
     renderAll();
     if (showToast) api.toast(label + ' ja esta ativo');
     return {
@@ -227,25 +256,80 @@ async function performAccountSwitch(id, { showToast = true } = {}) {
   }
 
   switchingAccount = id;
+  switchingStage = 'INICIANDO';
+  clearSwitchError();
   renderAll();
   if (showToast) api.toast('Trocando para ' + label + '...');
-  log('account switch start account=' + id);
+  log('account switch start account=' + id + ' details=' + SWITCH_LOG_FILE);
 
   try {
-    const result = await switchCodexAccount(id);
-    await refresh(true);
-    log('account switch finished account=' + id + ' restarted=' + result.vscodeRestarted + ' projects=' + result.reopenedTargets.length);
+    const result = await switchCodexAccount(id, {
+      onProgress(message) {
+        switchingStage = /fechando/i.test(message) ? 'FECHANDO'
+          : /reabrindo/i.test(message) ? 'ABRINDO'
+            : /identificando/i.test(message) ? 'LENDO'
+              : /aplicando/i.test(message) ? 'TROCANDO'
+                : 'AGUARDE';
+        log('account switch progress account=' + id + ' step=' + message);
+        renderAll();
+      },
+    });
+
+    log('account switch finished account=' + id
+      + ' restarted=' + result.vscodeRestarted
+      + ' projects=' + result.reopenedTargets.length
+      + ' restoreMode=' + (result.restoreMode || 'none'));
 
     if (showToast) {
-      const suffix = result.vscodeRestarted
-        ? ' • VS Code reiniciado' + (result.reopenedTargets.length ? ' • ' + result.reopenedTargets.length + ' projeto(s)' : '')
-        : '';
-      api.toast(label + ' ativo' + suffix);
+      if (result.restorePartial) {
+        api.toast(label + ' ATIVO • '
+          + result.windowsRestored + '/' + result.windowsExpected
+          + ' janelas reabertas. Abra o projeto restante manualmente.');
+      } else if (result.restoreFailed) {
+        api.toast(label + ' ATIVO • Nao foi possivel reabrir o VS Code. Abra um projeto manualmente.');
+      } else {
+        const suffix = result.vscodeRestarted ? ' • projetos restaurados' : '';
+        api.toast(label + ' ativo' + suffix);
+      }
     }
 
+    // Quota refresh is not a prerequisite for successful account switching.
+    void refresh(true).catch((error) => log('post-switch refresh error: ' + String(error)));
     return result;
+  } catch (error) {
+    const code = error?.code || 'UNKNOWN';
+    const detail = error instanceof Error ? error.message : String(error);
+    const selected = activeAccount();
+    const accountChanged = error?.accountChanged === true || selected === id;
+
+    const errorInfo = {
+      account: id,
+      code,
+      detail,
+      accountChanged,
+      activeAccount: selected,
+      time: new Date().toISOString(),
+    };
+    showTemporarySwitchError(errorInfo);
+
+    log('account switch failed account=' + id + ' code=' + code
+      + ' accountChanged=' + accountChanged + ' activeAccount=' + selected
+      + ' error=' + detail);
+
+    if (showToast) {
+      if (accountChanged) {
+        api.toast(label + ' ATIVO • VS Code incompleto: ' + detail
+          + ' | Log: ' + SWITCH_LOG_FILE);
+      } else {
+        api.toast('Troca NAO aplicada • ' + code + ': ' + detail
+          + ' | Log: ' + SWITCH_LOG_FILE);
+      }
+    }
+
+    throw error;
   } finally {
     switchingAccount = null;
+    switchingStage = '';
     renderAll();
   }
 }
@@ -286,11 +370,8 @@ api.onRun((message) => {
   const spec = ACTIONS[message?.uuid];
 
   if (spec?.switchAccount) {
-    void performAccountSwitch(spec.switchAccount).catch((error) => {
-      const detail = error instanceof Error ? error.message : String(error);
-      log('account switch failed account=' + spec.switchAccount + ' error=' + detail);
+    void performAccountSwitch(spec.switchAccount).catch(() => {
       try { api.showAlert(message.context); } catch {}
-      api.toast('Falha ao trocar Codex: ' + detail);
     });
     return;
   }

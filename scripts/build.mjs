@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { build } from 'esbuild';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
+import { switchIconSvg } from '../src/switch-icons.js';
 
 const root = process.cwd();
 const name = 'com.ulanzi.ulanzistudio.jeycodex.ulanziPlugin';
@@ -44,7 +45,10 @@ const generatedIcons = [
 ];
 
 for (const name of generatedIcons) {
-  const svg = fs.readFileSync(path.join(out, 'resources', 'icons', name + '.svg'), 'utf8');
+  const match = /^switch-(jey|americano)-(idle|active|switching)$/.exec(name);
+  const svg = match
+    ? switchIconSvg(match[1], match[2])
+    : fs.readFileSync(path.join(out, 'resources', 'icons', name + '.svg'), 'utf8');
   const png = new Resvg(svg, { fitTo: { mode: 'width', value: 144 } }).render().asPng();
   fs.writeFileSync(path.join(out, 'resources', 'icons', name + '.png'), png);
 }
