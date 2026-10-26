@@ -3,177 +3,155 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#070b14">
+<meta name="theme-color" content="#080d16">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="referrer" content="no-referrer">
 <link rel="manifest" href="./manifest.webmanifest?token=__JEY_TOKEN_VALUE__">
 <link rel="icon" href="./icon.svg?token=__JEY_TOKEN_VALUE__" type="image/svg+xml">
-<title>Codex Status</title>
+<title>Codex • Central mobile</title>
 <style>
-:root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070b14;color:#f8fafc}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#152033 0,#070b14 42%);padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 28px)}
-.wrap{max-width:560px;margin:0 auto}.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:4px 2px 20px}
-h1{font-size:25px;line-height:1.05;margin:0;letter-spacing:-.03em}.sub{font-size:12px;color:#8290a6;margin-top:6px}
-.sync{border:0;border-radius:14px;background:#172033;color:#e7edf7;min-width:48px;height:48px;font-size:20px;font-weight:800}.sync.busy{color:#38bdf8;animation:pulse .8s infinite alternate}@keyframes pulse{to{opacity:.45}}
-.account{background:rgba(15,23,42,.88);border:1px solid #202c40;border-radius:22px;padding:18px;margin-bottom:15px;box-shadow:0 16px 45px rgba(0,0,0,.2)}
-.account.active{border-color:#38bdf8;box-shadow:0 0 0 1px rgba(56,189,248,.16),0 16px 45px rgba(0,0,0,.2)}
-.account-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.name{font-size:18px;font-weight:800;letter-spacing:.04em}
-.badge{font-size:10px;font-weight:900;border-radius:999px;padding:6px 9px;background:#132235;color:#38bdf8;letter-spacing:.07em}.badge.off{background:#171d29;color:#718096}
-.limit{margin:12px 0 16px}.row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}.window{font-size:13px;color:#a8b3c4;font-weight:800}.pct{font-size:29px;font-weight:900;letter-spacing:-.04em}
-.track{height:13px;border-radius:999px;background:#202838;overflow:hidden}.bar{height:100%;border-radius:inherit;transition:width .35s ease,background .35s ease}
-.meta{display:flex;justify-content:space-between;font-size:11px;color:#748197;margin-top:7px}
-.use{width:100%;height:48px;border-radius:14px;border:1px solid #2b3850;background:#111a2a;color:#f1f5f9;font-weight:850;font-size:14px}.use:disabled{opacity:.45}.use.active{border-color:#1f7da0;color:#7dd3fc;background:#0c1d29}
-.footer{text-align:center;color:#657086;font-size:11px;margin-top:18px;line-height:1.6}.activity{background:rgba(15,23,42,.8);border:1px solid #202c40;border-radius:20px;padding:16px;margin-bottom:15px;box-shadow:0 16px 45px rgba(0,0,0,.16)}.activity-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}.activity-title{font-size:11px;font-weight:900;letter-spacing:.09em;color:#38bdf8}.activity-status{font-size:10px;font-weight:900;border-radius:999px;padding:6px 8px;background:#172033;color:#94a3b8;letter-spacing:.06em;white-space:nowrap}.activity-status.running{background:#0b2c2a;color:#5eead4}.activity-status.waiting{background:#34280f;color:#facc15}.activity-status.stopped{background:#1f2937;color:#cbd5e1}.activity-status.stale{background:#30251a;color:#fdba74}.activity-message{font-size:14px;color:#e5edf8;line-height:1.48;word-break:break-word}.activity-meta{display:flex;flex-wrap:wrap;gap:6px 10px;font-size:10px;color:#718096;margin-top:9px}.activity-meta span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.activity-stream{border-top:1px solid #202c40;margin-top:15px;padding-top:13px}.stream-title{font-size:10px;font-weight:900;color:#8290a6;letter-spacing:.1em;margin-bottom:10px}.event{display:grid;grid-template-columns:10px 1fr auto;gap:9px;align-items:start;padding:8px 0}.event-dot{width:8px;height:8px;border-radius:50%;background:#64748b;margin-top:5px}.event.current .event-dot{background:#2dd4bf;box-shadow:0 0 0 4px rgba(45,212,191,.12)}.event.waiting .event-dot{background:#facc15}.event.stopped .event-dot{background:#94a3b8}.event-copy{min-width:0}.event-label{font-size:10px;color:#8290a6;font-weight:900;letter-spacing:.06em}.event-message{font-size:12px;line-height:1.4;color:#cbd5e1;word-break:break-word}.event-time{font-size:10px;color:#64748b;white-space:nowrap}.empty{font-size:13px;color:#94a3b8}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#111a2a;border:1px solid #202c40;border-radius:16px;padding:5px;margin-bottom:15px}.tab{height:42px;border:0;border-radius:11px;background:transparent;color:#7f8ca1;font-weight:900;letter-spacing:.07em;font-size:12px}.tab.active{background:#243650;color:#e6f6ff;box-shadow:0 3px 12px rgba(0,0,0,.18)}.panel.hidden{display:none}.error{color:#fb7185}
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark;background:#080d16;color:#f1f5f9}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -160px,#172e44 0,#080d16 60%);padding:calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 112px)}
+button,input{font:inherit}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.48;cursor:default}button:focus-visible,input:focus-visible{outline:2px solid #60cffa;outline-offset:3px}
+.wrap{max-width:640px;margin:0 auto}.header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:15px}.brand{display:flex;gap:11px;align-items:center}.brand-icon{width:42px;height:42px;border-radius:13px;background:linear-gradient(140deg,#55d4e8,#327ba3);display:grid;place-items:center;color:#061521;font-size:24px;font-weight:900;box-shadow:0 7px 24px #12547566}.eyebrow{color:#8d9bb1;font-size:10px;letter-spacing:.15em;font-weight:850}.brand h1{margin:3px 0 0;font-size:22px;letter-spacing:-.045em;line-height:1.1}.refresh{width:45px;height:45px;border:1px solid #263449;border-radius:14px;background:#142033;color:#dbf5ff;font-size:23px}.refresh.busy{animation:pulse .8s infinite alternate}@keyframes pulse{to{opacity:.45}}
+.connection{display:flex;align-items:center;justify-content:space-between;color:#93a4b8;font-size:12px;margin-bottom:15px;gap:10px}.connection-left{display:flex;gap:7px;align-items:center}.led{height:8px;width:8px;background:#5e748d;border-radius:50%}.led.online{background:#2dd4bf;box-shadow:0 0 0 4px #2dd4bf18}.led.offline{background:#fb7185}.connection-time{font-variant-numeric:tabular-nums;font-size:11px;color:#7688a0}
+.overview{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.stat{border:1px solid #243247;border-radius:19px;background:linear-gradient(160deg,#172437d9,#101927ef);padding:15px}.stat-label{font-size:10px;color:#92a3b8;font-weight:800;letter-spacing:.075em}.stat-number{margin-top:6px;font-size:27px;font-weight:880;line-height:1;letter-spacing:-.035em}.stat-detail{font-size:11px;color:#7e90a8;margin-top:7px}.accent{color:#62dce4}.warning{color:#fcd34d}.danger{color:#fb8796}
+.attention{border:1px solid #735b28;background:#302610;border-radius:15px;color:#ffe4a3;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:13px;font-size:12px;line-height:1.45}.attention strong{display:block;font-size:13px;margin-bottom:2px}.attention.error{border-color:#823b48;background:#311b25;color:#ffc0c8}.hidden{display:none!important}
+.section-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:21px 2px 13px}.section-title{font-size:16px;letter-spacing:-.02em;font-weight:850}.section-hint{color:#8190a4;font-size:11px}.count{font-size:11px;border-radius:99px;background:#172638;color:#7bdced;padding:5px 9px;font-weight:750}
+.search{width:100%;height:46px;background:#111a29;border:1px solid #263248;border-radius:13px;color:#f3f6fa;padding:0 14px;margin-bottom:10px;outline:none}.search::placeholder{color:#67788f}
+.filters{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;margin-bottom:14px}.filters::-webkit-scrollbar{display:none}.filter{border:1px solid #28364b;background:#101a29;border-radius:99px;color:#97a7bc;padding:10px 12px;min-height:40px;font-size:11px;font-weight:750;white-space:nowrap}.filter.selected{color:#dbfaff;border-color:#387c9b;background:#173145}
+.session{background:#121d2d;border:1px solid #24344a;border-radius:19px;margin-bottom:11px;padding:15px;box-shadow:0 9px 28px #02071133}.session.live{border-color:#216557}.session.waiting{border-color:#896b2b}.session-head{display:flex;gap:10px;align-items:flex-start}.session-icon{height:34px;width:34px;border-radius:11px;background:#1b3448;display:grid;place-items:center;color:#69cde2;font-weight:850;flex-shrink:0}.session-title{font-size:14px;font-weight:850;overflow-wrap:anywhere}.session-sub{font-size:10px;color:#8193aa;margin-top:5px}.session-main{min-width:0;flex:1}.pill{font-size:9px;letter-spacing:.05em;border-radius:99px;font-weight:850;padding:5px 7px;background:#283347;color:#b8c6d9;white-space:nowrap}.pill.running{background:#12483c;color:#5df0c7}.pill.waiting{background:#4a381a;color:#ffd476}.pill.stopped{background:#273043;color:#a8b9cf}.pill.stale{background:#3b2c24;color:#edb68c}
+.session-message{font-size:12px;line-height:1.52;color:#cad5e3;margin:13px 0;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}.session-info{display:flex;justify-content:space-between;gap:12px;font-size:10px;color:#7e90a6}.session-actions{display:flex;gap:8px;margin-top:13px}.mini-btn{min-height:39px;border-radius:11px;background:#1a2a3e;color:#d8eaf7;border:1px solid #304159;padding:0 12px;font-size:11px;font-weight:800;flex:1}.mini-btn.pin{max-width:48px;flex:0 0 45px;font-size:18px}.mini-btn.pinned{color:#fcd34d;background:#382d19}.event-list{border-top:1px solid #2a3749;margin-top:14px;padding-top:8px}.event-item{display:grid;grid-template-columns:10px 1fr auto;gap:10px;padding:9px 0}.event-dot{height:7px;width:7px;border-radius:50%;background:#45627a;margin-top:5px}.event-dot.waiting{background:#facc15}.event-dot.running{background:#2dd4bf}.event-text{font-size:11px;color:#c7d5e4;line-height:1.45;overflow-wrap:anywhere}.event-time{color:#76879b;font-size:10px;white-space:nowrap}.empty{border:1px dashed #344157;border-radius:17px;padding:27px 15px;text-align:center;color:#93a4b9;font-size:13px;line-height:1.6}
+.more{width:100%;margin-top:3px;border:1px solid #30445d;background:#111d2c;color:#a5e7f5;border-radius:13px;min-height:45px;font-weight:800;font-size:12px}
+.account{border:1px solid #26354b;background:#111c2c;border-radius:20px;padding:17px;margin-bottom:13px}.account.active{border-color:#387f95}.account-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.account-name{font-size:17px;font-weight:850}.account-state{font-size:10px;color:#7ea3bb;font-weight:850}.account-state.active{color:#65e6d3}.quota{margin-bottom:16px}.quota:last-child{margin-bottom:0}.quota-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}.quota-title{font-size:12px;color:#b0bfd0;font-weight:750}.quota-pct{font-size:24px;font-weight:900;letter-spacing:-.03em}.track{background:#243145;border-radius:99px;height:10px;overflow:hidden}.bar{height:100%;border-radius:99px;transition:width .35s ease}.quota-meta{display:flex;justify-content:space-between;margin-top:7px;color:#8190a7;font-size:10px}.action-card{background:#111c2c;border:1px solid #26364a;border-radius:19px;padding:17px;margin-bottom:13px}.action-title{font-size:14px;font-weight:850;margin-bottom:7px}.action-text{font-size:12px;color:#91a4bb;line-height:1.5;margin:0 0 14px}.action-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.action-btn{min-height:48px;padding:11px 13px;border-radius:13px;border:1px solid #39536d;background:#193047;color:#e4f7ff;font-size:12px;font-weight:850}.action-btn.primary{background:#176478;border-color:#299aad;color:#edffff}.action-btn.full{width:100%}.action-btn.selected{color:#5ef1cb;border-color:#246c60;background:#123c34}.action-note{font-size:11px;color:#89a0b6;margin:11px 0 0;line-height:1.55}.switch-progress{margin-top:12px;color:#f7d18c;font-size:12px}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #26364a}.toggle:first-of-type{border-top:0}.toggle strong{display:block;font-size:12px}.toggle small{display:block;color:#8193aa;margin-top:4px;font-size:10px;line-height:1.35}.toggle button{min-width:67px;height:35px;border:1px solid #34465d;border-radius:99px;background:#172434;color:#95a6ba;font-size:10px;font-weight:900}.toggle button.on{color:#6fead7;background:#174c43;border-color:#2b8777}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:9;padding:11px 16px calc(env(safe-area-inset-bottom) + 12px);background:linear-gradient(0deg,#090f19 79%,#090f19e8);border-top:1px solid #223145}.bottom-inner{max-width:640px;margin:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:53px;border-radius:13px;border:0;background:transparent;color:#7488a2;font-weight:850;font-size:10px}.nav-btn .glyph{font-size:21px;font-weight:650;line-height:1}.nav-btn.active{color:#83ddea;background:#152d40}
+.toast-box{position:fixed;z-index:20;top:calc(env(safe-area-inset-top) + 9px);left:16px;right:16px;display:grid;gap:7px;max-width:600px;margin:auto;pointer-events:none}.toast{border-radius:13px;background:#224457;border:1px solid #377b8e;color:#ecfbff;padding:12px 14px;box-shadow:0 10px 40px #0008;font-size:12px;line-height:1.4}.toast.error{background:#4b2531;border-color:#a05262}
+.smallprint{color:#78899e;font-size:11px;line-height:1.55;padding:4px 2px 14px}
+@media(min-width:680px){body{padding-left:24px;padding-right:24px}.overview{grid-template-columns:repeat(4,1fr)}.stat{padding:20px}.stat-number{font-size:30px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <div><h1>CODEX STATUS</h1><div class="sub" id="updated">Carregando…</div></div>
-    <button class="sync" id="refresh" aria-label="Atualizar limites e atividade" title="Atualizar limites e atividade">↻</button>
-  </div>
-  <div class="tabs"><button class="tab active" data-tab="codex">CODEX</button><button class="tab" data-tab="usage">CONSUMO</button></div>
-  <section id="codexPanel" class="panel"><div id="activity"></div></section>
-  <section id="usagePanel" class="panel hidden"><div id="accounts"></div></section>
-  <div class="footer" id="footer">Mesmo estado do Ulanzi • rede local</div>
+  <header>
+    <div class="header">
+      <div class="brand"><div class="brand-icon">C</div><div><div class="eyebrow">ULANZI IA / PAINEL REMOTO</div><h1>Codex Central</h1></div></div>
+      <button class="refresh" type="button" data-action="refresh" aria-label="Atualizar agora" title="Atualizar agora">↻</button>
+    </div>
+    <div class="connection"><div class="connection-left"><span id="led" class="led"></span><span id="connection">Conectando ao PC…</span></div><span id="stamp" class="connection-time">—</span></div>
+    <div class="overview">
+      <div class="stat"><div class="stat-label">EM EXECUÇÃO</div><div id="runningCount" class="stat-number accent">—</div><div id="runningDetail" class="stat-detail">Sessões ativas</div></div>
+      <div class="stat"><div class="stat-label">PRECISAM DE VOCÊ</div><div id="waitingCount" class="stat-number">—</div><div class="stat-detail">Permissões pendentes</div></div>
+      <div class="stat"><div class="stat-label">CONTA NO VS CODE</div><div id="currentAccount" class="stat-number" style="font-size:19px;margin-top:12px">—</div><div class="stat-detail">Perfil ativo</div></div>
+      <div class="stat"><div class="stat-label">SESSÕES VISTAS</div><div id="sessionCount" class="stat-number">—</div><div class="stat-detail">Até 20 no painel</div></div>
+    </div>
+    <div class="attention hidden" id="attention"></div>
+  </header>
+
+  <main>
+    <section id="page-live">
+      <div class="section-top"><div class="section-title">Atividade por projeto</div><span id="liveLabel" class="count">Ao vivo</span></div>
+      <input id="search" class="search" type="search" placeholder="Buscar projeto ou sessão" autocomplete="off" aria-label="Buscar sessões">
+      <div class="filters" aria-label="Filtrar sessões">
+        <button class="filter selected" data-filter="all">Todas</button>
+        <button class="filter" data-filter="active">Rodando</button>
+        <button class="filter" data-filter="waiting">Aguardando</button>
+        <button class="filter" data-filter="pinned">Favoritas</button>
+        <button class="filter" data-filter="recent">Recentes</button>
+      </div>
+      <div id="sessions"><div class="empty">Procurando sessões do Codex no PC…</div></div>
+      <button id="showMore" class="more hidden" data-action="more">Mostrar mais sessões</button>
+    </section>
+
+    <section id="page-usage" class="hidden">
+      <div class="section-top"><div class="section-title">Limites das contas</div><span class="section-hint">Restante disponível</span></div>
+      <div id="accounts"><div class="empty">Carregando limites…</div></div>
+      <p class="smallprint">Os percentuais mostram o limite restante. O horário de reset é uma previsão baseada nos dados do Codex.</p>
+    </section>
+
+    <section id="page-actions" class="hidden">
+      <div class="section-top"><div class="section-title">Controle remoto</div><span class="section-hint">Mesmo PC, mesma rede</span></div>
+      <div class="action-card">
+        <div class="action-title">Alternar perfil do Codex</div>
+        <p class="action-text">Troca JEY / AMERICANO usando o mecanismo já existente no plugin. Se o VS Code estiver aberto, as janelas serão restauradas conforme o resultado da operação.</p>
+        <div class="action-row">
+          <button id="switchJey" class="action-btn" data-action="switch-jey">Usar JEY</button>
+          <button id="switchAmericano" class="action-btn" data-action="switch-americano">Usar AMERICANO</button>
+        </div>
+        <div id="switchProgress" class="switch-progress hidden"></div>
+      </div>
+      <div class="action-card">
+        <div class="action-title">Ações rápidas</div>
+        <p class="action-text">Compartilhe um resumo ou consulte informações do monitor sem abrir o PC.</p>
+        <div class="action-row">
+          <button class="action-btn" data-action="copy-summary">Copiar resumo</button>
+          <button class="action-btn" data-action="copy-diagnostic">Copiar diagnóstico</button>
+          <button class="action-btn" data-action="refresh">Atualizar limites</button>
+          <button class="action-btn" data-action="go-live">Ver atividade</button>
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-title">Preferências do painel</div>
+        <div class="toggle"><div><strong>Avisos de atividade</strong><small>Alerta dentro do painel ao detectar espera ou conclusão</small></div><button id="alertsToggle" data-action="alerts" type="button">—</button></div>
+        <div class="toggle"><div><strong>Atualização automática</strong><small>Consulta novas atividades a cada 4 segundos com a tela aberta</small></div><button id="autoToggle" data-action="auto" type="button">—</button></div>
+        <div class="toggle"><div><strong>Projetos favoritos</strong><small>Prioriza as sessões marcadas com estrela neste celular</small></div><button id="resetPins" data-action="clear-pins" type="button">Limpar</button></div>
+        <p class="action-note">Os avisos são locais, não são notificações push em segundo plano. O PC deve permanecer ligado e o servidor mobile iniciado no Ulanzi.</p>
+      </div>
+      <div id="technical" class="smallprint">Aguardando informações do PC…</div>
+    </section>
+  </main>
 </div>
+<div class="toast-box" id="toastBox" role="status" aria-live="polite"></div>
+<nav class="bottom-nav" aria-label="Navegação">
+  <div class="bottom-inner">
+    <button class="nav-btn active" data-page="live"><span class="glyph">◉</span>ATIVIDADE</button>
+    <button class="nav-btn" data-page="usage"><span class="glyph">▥</span>CONSUMO</button>
+    <button class="nav-btn" data-page="actions"><span class="glyph">⌘</span>AÇÕES</button>
+  </div>
+</nav>
 <script>
 const TOKEN=__JEY_TOKEN__;
-const elAccounts=document.querySelector('#accounts');
-const elActivity=document.querySelector('#activity');
-const elCodexPanel=document.querySelector('#codexPanel');
-const elUsagePanel=document.querySelector('#usagePanel');
-const elUpdated=document.querySelector('#updated');
-const elRefresh=document.querySelector('#refresh');
-const elFooter=document.querySelector('#footer');
-let busy=false;
-let loading=false;
-
-function remaining(reading){return reading?Math.max(0,Math.min(100,100-reading.usedPercent)):null}
-function color(value){if(value===null)return'#475569';if(value>=60)return'#34d399';if(value>=35)return'#facc15';if(value>=15)return'#fb923c';return'#f43f5e'}
-function resetText(value){
-  if(!value)return'—';
-  const ms=Math.max(0,new Date(value).getTime()-Date.now()),mins=Math.floor(ms/60000);
-  const d=Math.floor(mins/1440),h=Math.floor((mins%1440)/60),m=mins%60;
-  return d>0?d+'d '+h+'h':h>0?h+'h '+m+'m':Math.max(0,m)+'m';
-}
-function timeText(value){
-  if(!value)return'—';
-  const date=new Date(value);
-  return Number.isNaN(date.getTime())?'—':date.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-}
-function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-function statusText(activity){
-  if(activity.active&&activity.status==='waiting')return'AGUARDANDO PERMISSÃO';
-  if(activity.active&&activity.status==='running')return'RODANDO';
-  if(activity.status==='stopped'&&activity.terminal)return'CONCLUÍDA';
-  if(activity.status==='stale')return'SEM EVENTO RECENTE';
-  return'PARADO';
-}
-function statusClass(activity){
-  if(activity.active&&activity.status==='waiting')return'waiting';
-  if(activity.active&&activity.status==='running')return'running';
-  if(activity.status==='stopped'&&activity.terminal)return'stopped';
-  return'stale';
-}
-function eventLabel(status){
-  if(status==='waiting')return'AGUARDANDO PERMISSÃO';
-  if(status==='running')return'ATIVIDADE';
-  if(status==='stopped')return'FINALIZADO';
-  return'ATUALIZAÇÃO';
-}
-function renderActivity(activity){
-  const act=activity||{};
-  const events=Array.isArray(act.events)?act.events:[];
-  const label=statusText(act);
-  const cls=statusClass(act);
-  const meta=[];
-  if(act.project)meta.push('<span>Projeto: '+esc(act.project)+'</span>');
-  if(act.sessionId)meta.push('<span>Sessão: '+esc(act.sessionId)+'</span>');
-  if(act.updatedAt)meta.push('<span>Último evento: '+timeText(act.updatedAt)+'</span>');
-  const eventList=events.length?events.map(function(event,index){
-    const eventClass=event.status==='waiting'?'waiting':event.status==='stopped'?'stopped':'running';
-    return '<div class="event '+eventClass+' '+(index===0?'current':'')+'"><span class="event-dot"></span><div class="event-copy"><div class="event-label">'+eventLabel(event.status)+'</div><div class="event-message">'+esc(event.message)+'</div></div><span class="event-time">'+timeText(event.updatedAt)+'</span></div>';
-  }).join(''):'<div class="empty">Nenhum evento legível nesta sessão.</div>';
-  const sessions=act.sessionCount?'<span>'+act.sessionCount+' sessão'+(act.sessionCount===1?'':'ões')+' encontrada'+(act.sessionCount===1?'':'s')+'</span>':'';
-  elActivity.innerHTML='<section class="activity"><div class="activity-head"><span class="activity-title">ATIVIDADE DO CODEX</span><span class="activity-status '+cls+'">'+label+'</span></div><div class="activity-message">'+esc(act.message||'Nenhuma atividade registrada')+'</div><div class="activity-meta">'+meta.join('')+(sessions?'<span>'+sessions+'</span>':'')+'</div><div class="activity-stream"><div class="stream-title">EVENTOS RECENTES</div>'+eventList+'</div></section>';
-}
-function limit(label,reading,stale){
-  const rem=remaining(reading),pct=rem===null?'—':Math.round(rem)+'%';
-  return '<div class="limit"><div class="row"><span class="window">'+label+'</span><span class="pct" style="color:'+color(rem)+'">'+pct+'</span></div>'+
-  '<div class="track"><div class="bar" style="width:'+(rem??0)+'%;background:'+color(rem)+'"></div></div>'+
-  '<div class="meta"><span>'+(stale?'STALE':'restante')+'</span><span>reset '+resetText(reading&&reading.resetsAt)+'</span></div></div>';
-}
-function accountCard(a,active,syncing){
-  const stale=!!a.stale,isActive=active===a.id;
-  const status=a.status==='login'?'LOGIN':a.status==='error'?'OFFLINE':stale?'STALE':'OK';
-  return '<section class="account '+(isActive?'active':'')+'"><div class="account-head"><div class="name">'+esc(a.label)+'</div><div class="badge '+(isActive?'':'off')+'">'+(isActive?'ATIVA':status)+'</div></div>'+
-  limit('5H',a.fiveHour,stale)+limit('7D',a.sevenDay,stale)+
-  '<button class="use '+(isActive?'active':'')+'" data-account="'+a.id+'" '+((busy||syncing||isActive||a.status==='login')?'disabled':'')+'>'+(isActive?'CONTA ATIVA':'USAR '+esc(a.label))+'</button></section>';
-}
-async function api(path,opts){
-  opts=opts||{};
-  const joiner=path.indexOf('?')>=0?'&':'?';
-  const res=await fetch(path+joiner+'token='+encodeURIComponent(TOKEN),Object.assign({cache:'no-store'},opts));
-  const body=await res.json().catch(function(){return{}});
-  if(!res.ok)throw new Error(body.error||('HTTP '+res.status));
-  return body;
-}
-function setTab(name){
-  const codex=name==='codex';
-  elCodexPanel.classList.toggle('hidden',!codex);
-  elUsagePanel.classList.toggle('hidden',codex);
-  document.querySelectorAll('[data-tab]').forEach(function(button){button.classList.toggle('active',button.dataset.tab===name)});
-}
-document.querySelectorAll('[data-tab]').forEach(function(button){button.addEventListener('click',function(){setTab(button.dataset.tab)})});
-
-async function load(){
-  if(loading)return;
-  loading=true;
-  try{
-    const state=await api('/api/status');
-    renderActivity(state.activity);
-    elAccounts.innerHTML=state.accounts.map(function(a){return accountCard(a,state.activeAccount,state.syncing)}).join('');
-    const when=state.lastUpdatedAt?timeText(state.lastUpdatedAt):'ainda não atualizado';
-    elUpdated.textContent=(state.syncing?'SINCRONIZANDO LIMITES • ':'LIMITES • ')+when;
-    elRefresh.classList.toggle('busy',!!state.syncing||busy);
-    elFooter.textContent='PC '+state.host+' • porta '+state.port+' • atividade atualizada automaticamente';
-    document.querySelectorAll('[data-account]').forEach(function(btn){btn.addEventListener('click',function(){switchAccount(btn.dataset.account)})});
-  }catch(e){elFooter.innerHTML='<span class="error">'+esc(e.message)+'</span>'}
-  finally{loading=false}
-}
-async function doRefresh(){
-  if(busy)return;
-  busy=true;
-  elRefresh.classList.add('busy');
-  elUpdated.textContent='ATUALIZANDO LIMITES E ATIVIDADE…';
-  try{
-    await load();
-    await api('/api/refresh',{method:'POST'});
-    await load();
-  }catch(e){elFooter.innerHTML='<span class="error">'+esc(e.message)+'</span>'}
-  finally{
-    busy=false;
-    elRefresh.classList.remove('busy');
-    await load();
-  }
-}
-async function switchAccount(id){
-  if(busy)return;
-  if(!confirm('Trocar o Codex para '+id.toUpperCase()+'?'))return;
-  busy=true;await load();
-  try{
-    const result=await api('/api/switch/'+id,{method:'POST'});
-    elFooter.textContent=result.vscodeRestarted?'Conta trocada • VS Code reiniciado':'Conta trocada • VS Code estava fechado';
-    await new Promise(function(resolve){setTimeout(resolve,700)});
-    await doRefresh();
-  }catch(e){elFooter.innerHTML='<span class="error">'+esc(e.message)+'</span>'}
-  finally{busy=false;await load()}
-}
-elRefresh.addEventListener('click',doRefresh);
-load();
-setInterval(load,5000);
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js?token=__JEY_TOKEN_VALUE__').catch(function(){});
+const $=function(selector){return document.querySelector(selector)};
+const app={state:null,online:false,loading:false,acting:'',page:'live',filter:'all',query:'',showAll:false,expanded:new Set(),pins:new Set(),firstLoad:true,seen:new Map(),auto:true,alerts:true,lastPoll:0};
+function readPref(name,fallback){try{const value=localStorage.getItem('codex.mobile.'+name);return value===null?fallback:JSON.parse(value)}catch{return fallback}}
+function savePref(name,value){try{localStorage.setItem('codex.mobile.'+name,JSON.stringify(value))}catch{}}
+app.auto=readPref('auto',true)!==false;
+app.alerts=readPref('alerts',true)!==false;
+app.pins=new Set(Array.isArray(readPref('pins',[]))?readPref('pins',[]):[]);
+function esc(value){return String(value??'').replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]})}
+function safeDate(value){const d=new Date(value);return value&&!Number.isNaN(d.getTime())?d:null}
+function clock(value){const d=safeDate(value);return d?d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'—'}
+function relative(value){const d=safeDate(value);if(!d)return'—';const sec=Math.max(0,Math.round((Date.now()-d.getTime())/1000));if(sec<60)return'agora';if(sec<3600)return'há '+Math.floor(sec/60)+' min';if(sec<86400)return'há '+Math.floor(sec/3600)+' h';return'há '+Math.floor(sec/86400)+' d'}
+function reset(value){const d=safeDate(value);if(!d)return'—';const min=Math.max(0,Math.round((d.getTime()-Date.now())/60000));const days=Math.floor(min/1440),h=Math.floor((min%1440)/60),m=min%60;return days?days+'d '+h+'h':h?h+'h '+m+'min':m+'min'}
+function remaining(reading){return reading&&Number.isFinite(Number(reading.usedPercent))?Math.max(0,Math.min(100,100-Number(reading.usedPercent))):null}
+function usageColor(n){return n===null?'#475569':n>=60?'#3bd6a4':n>=35?'#f7ce55':n>=15?'#ff9e60':'#fa7287'}
+function sessionKey(s){return String(s.profile||'')+'::'+String(s.sessionId||'')}
+function status(s){if(s.active&&s.status==='waiting')return{label:'AGUARDANDO',cls:'waiting'};if(s.active&&s.status==='running')return{label:'RODANDO',cls:'running'};if(s.terminal)return{label:'FINALIZADA',cls:'stopped'};return{label:'SEM EVENTO RECENTE',cls:'stale'}}
+function tip(message,isError){const parent=$('#toastBox'),node=document.createElement('div');node.className='toast'+(isError?' error':'');node.textContent=message;parent.appendChild(node);setTimeout(function(){node.remove()},4300)}
+function activityNotice(sessions){const next=new Map();let alerts=[];for(const s of sessions){const key=sessionKey(s);const marker=String(s.updatedAt||'')+':'+String(s.status||'')+':'+String(s.terminal||false);next.set(key,marker);const old=app.seen.get(key);if(!app.firstLoad&&old&&old!==marker){if(s.active&&s.status==='waiting')alerts.push('Permissão pendente em '+(s.project||'Codex'));else if(s.terminal)alerts.push('Sessão finalizada: '+(s.project||'Codex'))}}app.seen=next;if(app.alerts)alerts.slice(0,2).forEach(function(m){tip(m)})}
+function renderHeader(){const s=app.state||{};const online=app.online;const waiting=s.waitingSessionCount||0;$('#led').className='led '+(online?'online':'offline');$('#connection').textContent=online?'PC conectado • monitor online':'Sem conexão • exibindo último estado';$('#stamp').textContent=app.lastPoll?clock(app.lastPoll):'—';$('#runningCount').textContent=online?String(s.activeSessionCount||0):'—';$('#waitingCount').textContent=online?String(waiting):'—';$('#waitingCount').className='stat-number '+(waiting?'warning':'');$('#currentAccount').textContent=online?String(s.activeAccount||'—').toUpperCase():'—';$('#sessionCount').textContent=online?String(s.sessionCount||0):'—';$('#runningDetail').textContent=(s.activeSessionCount||0)===1?'Sessão ativa':'Sessões ativas';$('.refresh').classList.toggle('busy',!!app.acting||!!s.syncing);const attention=$('#attention');attention.className='attention hidden';if(!online){attention.className='attention error';attention.innerHTML='<div><strong>Conexão interrompida</strong>Confirme se o PC e o servidor mobile estão ligados e na mesma rede. Tentando reconectar.</div>'}else if(s.switchError){attention.className='attention error';attention.innerHTML='<div><strong>Troca de conta com problema</strong>'+esc(s.switchError.detail||s.switchError.code||'Consulte o diagnóstico')+'</div>'}else if(waiting){attention.className='attention';attention.innerHTML='<div><strong>'+waiting+' sessão(ões) podem precisar da sua atenção</strong>Abra a atividade para identificar o projeto e aprove no VS Code. O celular apenas monitora esta solicitação.</div>'}else if(s.switchingAccount){attention.className='attention';attention.innerHTML='<div><strong>Trocando para '+esc(s.switchingAccount).toUpperCase()+'</strong>Etapa: '+esc(s.switchingStage||'Processando')+'</div>'}}
+function sessionHTML(s){const key=sessionKey(s),st=status(s),isExpanded=app.expanded.has(key),pin=app.pins.has(key);const events=Array.isArray(s.events)?s.events:[];const timeline=events.length?events.map(function(ev){const evStatus=ev.status==='waiting'?'waiting':ev.status==='running'?'running':'';return '<div class="event-item"><span class="event-dot '+evStatus+'"></span><div class="event-text">'+esc(ev.message||'Evento do Codex')+'</div><span class="event-time">'+clock(ev.updatedAt)+'</span></div>'}).join(''):'<div class="empty">Ainda sem eventos legíveis.</div>';return '<article class="session '+(st.cls==='running'?'live':st.cls)+'"><div class="session-head"><div class="session-icon">⌘</div><div class="session-main"><div class="session-title">'+esc(s.project||'Projeto não identificado')+'</div><div class="session-sub">'+esc(s.profile||'ATUAL')+' • '+esc((s.sessionId||'').slice(0,12))+'</div></div><span class="pill '+st.cls+'">'+st.label+'</span></div><div class="session-message">'+esc(s.message||'Nenhum evento registrado')+'</div><div class="session-info"><span>'+relative(s.updatedAt)+'</span><span>'+clock(s.updatedAt)+'</span></div><div class="session-actions"><button class="mini-btn" data-action="expand" data-key="'+esc(key)+'" aria-expanded="'+isExpanded+'">'+(isExpanded?'Ocultar eventos':'Ver eventos ('+events.length+')')+'</button><button class="mini-btn pin '+(pin?'pinned':'')+'" data-action="pin" data-key="'+esc(key)+'" aria-label="'+(pin?'Remover favorito':'Marcar favorito')+'">'+(pin?'★':'☆')+'</button><button class="mini-btn" data-action="copy-session" data-key="'+esc(key)+'" style="flex:0 0 75px">Copiar</button></div>'+(isExpanded?'<div class="event-list">'+timeline+'</div>':'')+'</article>'}
+function renderSessions(){const sessions=(app.state&&Array.isArray(app.state.sessions))?app.state.sessions:[];let arr=sessions.filter(function(s){if(app.filter==='active'&&!s.active)return false;if(app.filter==='waiting'&&!(s.active&&s.status==='waiting'))return false;if(app.filter==='pinned'&&!app.pins.has(sessionKey(s)))return false;if(app.filter==='recent'&&(s.active||s.terminal))return false;const q=app.query.toLowerCase();return!q||(String(s.project||'')+' '+String(s.sessionId||'')+' '+String(s.message||'')).toLowerCase().includes(q)});arr.sort(function(a,b){const ap=app.pins.has(sessionKey(a))?1:0,bp=app.pins.has(sessionKey(b))?1:0;return bp-ap});const count=arr.length;const limited=app.showAll?arr:arr.slice(0,8);$('#liveLabel').textContent=count+' exibida'+(count===1?'':'s');$('#sessions').innerHTML=limited.length?limited.map(sessionHTML).join(''):'<div class="empty">'+(app.online?'Nenhuma sessão corresponde ao filtro. Tente outra opção.':'Não foi possível carregar novas sessões. Confira a conexão.')+'</div>';$('#showMore').classList.toggle('hidden',count<=8);$('#showMore').textContent=app.showAll?'Mostrar menos':'Mostrar todas ('+count+')';document.querySelectorAll('[data-filter]').forEach(function(el){el.classList.toggle('selected',el.dataset.filter===app.filter)})}
+function quotaHTML(label,r,stale){const rem=remaining(r),pct=rem===null?'—':Math.round(rem)+'%';return '<div class="quota"><div class="quota-row"><span class="quota-title">'+label+'</span><span class="quota-pct" style="color:'+usageColor(rem)+'">'+pct+'</span></div><div class="track"><div class="bar" style="width:'+(rem===null?0:rem)+'%;background:'+usageColor(rem)+'"></div></div><div class="quota-meta"><span>'+(stale?'DADOS DESATUALIZADOS':'Restante')+'</span><span>Reset em '+reset(r&&r.resetsAt)+'</span></div></div>'}
+function renderAccounts(){const s=app.state||{},accounts=Array.isArray(s.accounts)?s.accounts:[];$('#accounts').innerHTML=accounts.length?accounts.map(function(a){const active=s.activeAccount===a.id;const state=active?'ATIVA':a.status==='login'?'PRECISA LOGIN':a.stale?'STALE':a.status==='error'?'OFFLINE':'DISPONÍVEL';return '<section class="account '+(active?'active':'')+'"><div class="account-head"><div class="account-name">'+esc(a.label)+'</div><div class="account-state '+(active?'active':'')+'">'+state+'</div></div>'+quotaHTML('JANELA DE 5 HORAS',a.fiveHour,!!a.stale)+quotaHTML('JANELA DE 7 DIAS',a.sevenDay,!!a.stale)+'</section>'}).join(''):'<div class="empty">Limites indisponíveis.</div>'}
+function renderActions(){const s=app.state||{},disabled=!app.online||!!app.acting||!!s.switchingAccount;const j=$('#switchJey'),a=$('#switchAmericano');j.disabled=disabled||s.activeAccount==='jey';a.disabled=disabled||s.activeAccount==='americano';j.classList.toggle('selected',s.activeAccount==='jey');a.classList.toggle('selected',s.activeAccount==='americano');j.textContent=s.activeAccount==='jey'?'JEY ATIVA':'Usar JEY';a.textContent=s.activeAccount==='americano'?'AMERICANO ATIVA':'Usar AMERICANO';const progress=$('#switchProgress');progress.classList.toggle('hidden',!s.switchingAccount&&!app.acting);progress.textContent=s.switchingAccount?'Trocando conta • '+(s.switchingStage||'Aguarde'):app.acting?'Executando ação…':'';for(const [id,val] of [['alertsToggle',app.alerts],['autoToggle',app.auto]]){const el=$('#'+id);el.textContent=val?'LIGADO':'DESLIGADO';el.classList.toggle('on',val)}$('#technical').textContent=app.online?'PC '+s.host+' • porta '+s.port+' • última leitura dos limites '+clock(s.lastUpdatedAt):'O acesso pelo celular depende do servidor local no PC.'}
+function render(){renderHeader();if(app.page==='live')renderSessions();if(app.page==='usage')renderAccounts();if(app.page==='actions')renderActions()}
+function setPage(page){if(!['live','usage','actions'].includes(page))return;app.page=page;for(const name of ['live','usage','actions'])$('#page-'+name).classList.toggle('hidden',name!==page);document.querySelectorAll('[data-page]').forEach(function(el){el.classList.toggle('active',el.dataset.page===page)});render();window.scrollTo({top:0,behavior:'auto'})}
+async function api(path,options){const res=await fetch(path+(path.includes('?')?'&':'?')+'token='+encodeURIComponent(TOKEN),Object.assign({cache:'no-store'},options||{}));const body=await res.json().catch(function(){return{}});if(!res.ok)throw Error(body.error||'Falha HTTP '+res.status);return body}
+async function poll(){if(app.loading)return;app.loading=true;try{const data=await api('/api/status');const sessions=Array.isArray(data.sessions)?data.sessions:[];activityNotice(sessions);app.state=data;app.online=true;app.lastPoll=Date.now();app.firstLoad=false;render()}catch(err){const wasOnline=app.online;app.online=false;render();if(wasOnline)tip('Conexão com o PC interrompida.',true)}finally{app.loading=false}}
+async function refresh(){if(app.acting)return;app.acting='refresh';render();try{await api('/api/refresh',{method:'POST'});await poll();tip('Limites e atividade atualizados.')}catch(err){tip(err.message,true)}finally{app.acting='';render()}}
+async function changeAccount(id){if(app.acting||!app.online)return;const s=app.state||{};if(s.activeAccount===id)return;if(!confirm('Trocar para '+id.toUpperCase()+'? Isso pode reiniciar as janelas abertas do VS Code.'))return;app.acting='switch';render();try{const result=await api('/api/switch/'+id,{method:'POST'});if(result.restoreFailed)tip('Conta alterada, mas o VS Code não foi restaurado.',true);else if(result.restorePartial)tip('Conta alterada com janelas parcialmente restauradas.',true);else tip('Conta alterada para '+id.toUpperCase());await poll()}catch(err){tip('Falha na troca: '+err.message,true);await poll()}finally{app.acting='';render()}}
+async function copyText(content){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(content);return true}}catch{}const input=document.createElement('textarea');input.value=content;input.style.position='fixed';input.style.opacity='0';document.body.appendChild(input);input.select();let ok=false;try{ok=document.execCommand('copy')}catch{}input.remove();return ok}
+function summaryText(){const s=app.state||{};const lines=['CODEX • STATUS DO PC','PC: '+(s.host||'—'),'Perfil ativo: '+(s.activeAccount||'—'),'Sessões ativas: '+(s.activeSessionCount||0),'Esperando permissão: '+(s.waitingSessionCount||0)];for(const a of(s.accounts||[])){lines.push(a.label+': 5H '+(remaining(a.fiveHour)===null?'—':Math.round(remaining(a.fiveHour))+'%')+' | 7D '+(remaining(a.sevenDay)===null?'—':Math.round(remaining(a.sevenDay))+'%'))}for(const session of(s.sessions||[]).filter(function(i){return i.active}).slice(0,8)){lines.push((session.project||'Codex')+' — '+status(session).label+' — '+(session.message||''))}return lines.join('\n')}
+function diagnosticText(){const s=app.state||{};return ['CODEX • DIAGNÓSTICO MOBILE','Data: '+new Date().toLocaleString('pt-BR'),'Servidor: '+(s.host||'—')+':'+(s.port||'—'),'Conectado: '+app.online,'Sincronizando: '+!!s.syncing,'Conta ativa: '+(s.activeAccount||'—'),'Troca em andamento: '+(s.switchingAccount||'não'),'Etapa: '+(s.switchingStage||'—'),'Última atualização de limites: '+(s.lastUpdatedAt||'—'),'Sessões encontradas: '+(s.sessionCount||0),'Sessões ativas: '+(s.activeSessionCount||0),'Aguardando: '+(s.waitingSessionCount||0),'Erro na troca: '+(s.switchError?s.switchError.code||'Sim':'não'),'Contas: '+(s.accounts||[]).map(function(a){return a.label+'='+a.status+(a.stale?' (stale)':'')}).join(', ')].join('\n')}
+async function executeAction(action,key){const sessions=app.state&&Array.isArray(app.state.sessions)?app.state.sessions:[];const selected=sessions.find(function(s){return sessionKey(s)===key});if(action==='refresh'){await refresh();return}if(action==='switch-jey'||action==='switch-americano'){await changeAccount(action.slice(7));return}if(action==='go-live'){setPage('live');return}if(action==='more'){app.showAll=!app.showAll;renderSessions();return}if(action==='expand'){if(app.expanded.has(key))app.expanded.delete(key);else app.expanded.add(key);renderSessions();return}if(action==='pin'){if(app.pins.has(key))app.pins.delete(key);else app.pins.add(key);savePref('pins',[...app.pins].slice(0,100));renderSessions();return}if(action==='alerts'){app.alerts=!app.alerts;savePref('alerts',app.alerts);renderActions();return}if(action==='auto'){app.auto=!app.auto;savePref('auto',app.auto);renderActions();if(app.auto)void poll();return}if(action==='clear-pins'){app.pins.clear();savePref('pins',[]);renderActions();tip('Favoritos removidos.');return}if(action==='copy-summary'||action==='copy-diagnostic'||action==='copy-session'){let text=action==='copy-diagnostic'?diagnosticText():action==='copy-session'&&selected?[(selected.project||'Codex')+' ('+selected.profile+')',status(selected).label,selected.message||'',...(selected.events||[]).map(function(ev){return clock(ev.updatedAt)+' • '+ev.message})].join('\n'):summaryText();const ok=await copyText(text);tip(ok?'Copiado para a área de transferência.':'Não foi possível copiar neste navegador.',!ok);return}}
+document.addEventListener('click',function(event){const nav=event.target.closest('[data-page]');if(nav){setPage(nav.dataset.page);return}const filter=event.target.closest('[data-filter]');if(filter){app.filter=filter.dataset.filter;app.showAll=false;renderSessions();return}const btn=event.target.closest('[data-action]');if(btn){void executeAction(btn.dataset.action,btn.dataset.key||'')}});$('#search').addEventListener('input',function(event){app.query=event.target.value||'';app.showAll=false;renderSessions()});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)void poll()});
+void poll();
+setInterval(function(){if(app.auto&&!document.hidden)void poll()},4000);
+if('serviceWorker' in navigator&&window.isSecureContext){navigator.serviceWorker.register('./sw.js?token=__JEY_TOKEN_VALUE__').catch(function(){})}
 </script>
 </body>
 </html>

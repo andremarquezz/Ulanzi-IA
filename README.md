@@ -63,3 +63,31 @@ Execute `npm test` e `npm run build` para as validacoes locais.
 ### Restauracao de janelas apos trocar a conta
 
 O Codex Limits tenta reabrir as pastas abertas sem solicitar login novamente. Para nao deixar o usuario esperando por varios minutos, a restauracao agora tem limites de espera e **nao repete indefinidamente**. O VS Code inicia sem `windowsHide` (somente os auxiliares de console rodam ocultos). Se apenas uma janela for reaberta, a conta continua trocada e o painel mostra uma mensagem informando `1/2 janelas`; a outra pasta pode ser aberta manualmente. Consulte `switch.log` para diagnostico. O PR ainda requer teste real das duas janelas no PC.
+
+
+## Central mobile: atividade, consumo e ações
+
+A branch `feat/mobile-command-center` adiciona uma interface nova para celulares:
+
+- **Atividade:** lista de até 20 sessões recentes, contador de sessões ativas, avisos de permissão, busca, filtros, favoritos e linha do tempo por sessão.
+- **Consumo:** percentuais de 5 horas e 7 dias para JEY e AMERICANO, com previsão de reset e indicação de dados desatualizados.
+- **Ações:** trocar de perfil, atualizar limites, copiar resumo de atividade ou diagnóstico e controlar os avisos e a atualização automática do painel.
+- **Estado:** reconexão automática quando a rede oscilar, feedback de troca de conta e aviso caso a restauração das janelas do VS Code falhe.
+
+As ações de troca continuam usando o mesmo backend do Ulanzi. O painel **não executa comandos arbitrários, não aprova permissões do Codex e não encerra tarefas**: essas operações exigem integração e controles de segurança específicos. O monitor mostra qual sessão requer ação no PC.
+
+Os avisos aparecem **dentro do painel aberto** quando uma sessão muda para espera ou conclusão; não são notificações push em segundo plano. O painel só funciona quando o PC está ligado, o plugin iniciou o servidor e o celular consegue acessar a mesma rede.
+
+### Observação sobre iPhone e PWA
+
+O atalho **Adicionar à Tela de Início** no Safari ajuda a abrir o painel como aplicativo, mas um servidor HTTP em um IP local normalmente não é um contexto seguro para service workers, notificações Web Push ou Clipboard API. O painel tem alternativa para copiar textos, e só tenta registrar service worker quando há contexto seguro. Para recursos de PWA completos, será necessário usar HTTPS confiável.
+
+### Verificações
+
+```powershell
+npm install
+npm test
+npm run build
+```
+
+O teste mobile verifica a sintaxe do JavaScript do painel e o retorno de múltiplas sessões, incluindo a exclusão de caminhos de arquivos locais do payload apresentado no celular.
