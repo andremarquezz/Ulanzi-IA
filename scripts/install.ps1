@@ -1,3 +1,4 @@
+param([switch]$UseExistingBuild)
 $ErrorActionPreference = 'Stop'
 
 $Root = Split-Path -Parent $PSScriptRoot
@@ -18,32 +19,33 @@ try {
     throw 'Codex CLI nao encontrado no PATH.'
   }
 
-  Write-Host '==> Instalando dependencias' -ForegroundColor Cyan
-  npm install
-  if ($LASTEXITCODE -ne 0) { throw 'npm install falhou.' }
+  if (-not $UseExistingBuild) {
+    Write-Host '==> Instalando dependencias' -ForegroundColor Cyan
+    npm install
+    if ($LASTEXITCODE -ne 0) { throw 'npm install falhou.' }
 
-  Write-Host '==> Gerando plugin minimalista' -ForegroundColor Cyan
-  npm run build
-  if ($LASTEXITCODE -ne 0) { throw 'build falhou.' }
+    Write-Host '==> Gerando plugin' -ForegroundColor Cyan
+    npm run build
+    if ($LASTEXITCODE -ne 0) { throw 'build falhou.' }
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $Source 'plugin\goal-worker.js'))) {
+    throw 'Build incompleto. Execute npm run build antes de instalar.'
+  }
 
   Write-Host '==> Instalando no Ulanzi Studio' -ForegroundColor Cyan
   New-Item $Plugins -ItemType Directory -Force | Out-Null
-  Remove-Item $Target -Recurse -Force -ErrorAction SilentlyContinue
-  Copy-Item $Source $Target -Recurse -Force
-
-  Write-Host '==> Liberando porta 3333 na rede privada' -ForegroundColor Cyan
-  try {
-    & netsh advfirewall firewall add rule name='Shindex Mobile 3333' dir=in action=allow protocol=TCP localport=3333 profile=private | Out-Null
-    if ($LASTEXITCODE -eq 0) { Write-Host 'Regra de firewall aplicada.' -ForegroundColor Green }
-    else { Write-Warning 'Nao foi possivel alterar o firewall automaticamente. Execute o comando indicado abaixo como Administrador.' }
-  } catch { Write-Warning 'Nao foi possivel alterar o firewall automaticamente.' }
+  New-Item $Target -ItemType Directory -Force | Out-Null
+  Get-ChildItem -LiteralPath $Source -Force | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination $Target -Recurse -Force
+  }
 
   Write-Host ''
   Write-Host 'INSTALADO.' -ForegroundColor Green
   Write-Host "Plugin: $Target"
   Write-Host ''
   Write-Host 'Feche COMPLETAMENTE o Ulanzi Studio, inclusive o icone da bandeja, e abra novamente.' -ForegroundColor Yellow
-  Write-Host 'Depois procure por Codex Limits e arraste as 5 acoes para as teclas.'
+  Write-Host 'Procure Codex Limits. Adicione PAINEL GOALS, EXECUTAR / PAUSAR e TROCA AUTOMATICA as teclas.'
+  Write-Host 'O painel Goals funciona localmente e nao exige configuracao de firewall.'
   Write-Host ''
   Write-Host 'PAINEL NO CELULAR' -ForegroundColor Cyan
   Write-Host 'Depois que o Ulanzi Studio abrir, arraste ABRIR NO CELULAR para uma tecla e pressione uma vez.' -ForegroundColor Gray

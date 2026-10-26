@@ -15,6 +15,13 @@ const ACCOUNTS = {
     background: '#12271d',
     edge: '#3c7650',
   },
+  hb: {
+    initial: 'H',
+    accent: '#c6a0ff',
+    accentSoft: '#e1caff',
+    background: '#23172f',
+    edge: '#79518f',
+  },
 };
 
 const STATUS = {

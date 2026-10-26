@@ -133,7 +133,7 @@ export function startMobileServer({
         return;
       }
 
-      const match = req.method === 'POST' && url.pathname.match(/^\/api\/switch\/(jey|americano)$/);
+      const match = req.method === 'POST' && url.pathname.match(/^\/api\/switch\/(jey|americano|hb)$/);
       if (match) {
         const result = await switchAccount(match[1]);
         sendJson(res, 200, result);

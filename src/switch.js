@@ -6,13 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { restoreProjectWindows } from './window-restore.js';
+import { acquireLock, isGoalMonitorRunning } from './goal-store.js';
 
 const execFileAsync = promisify(execFile);
 
-const homes = {
-  jey: path.join(os.homedir(), '.codex-jey'),
-  americano: path.join(os.homedir(), '.codex-americano'),
-};
+import { profileHomes as homes } from './accounts.js';
 
 const liveHome = path.join(os.homedir(), '.codex');
 const VSCODE_PROFILE = process.env.JEY_VSCODE_PROFILE || 'Jey';
@@ -316,7 +314,10 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
 
   writeLog(run, 'start', 'target=' + id);
   let credentialsApplied = false;
+  let releaseOperation;
   try {
+    releaseOperation = acquireLock('command.lock');
+    if (isGoalMonitorRunning()) throw new AccountSwitchError('GOAL_MONITOR_ACTIVE', 'Pare o monitor de Goals antes de trocar a conta manualmente.');
     if (process.platform !== 'win32') {
       throw new AccountSwitchError('OS_UNSUPPORTED', 'A troca automatica so esta disponivel no Windows.');
     }
@@ -330,10 +331,9 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
       throw new AccountSwitchError('LOGIN_MISSING', 'O login do Codex ' + id.toUpperCase() + ' nao foi encontrado. Configure essa conta primeiro.');
     }
 
-    const jeyId = readAccountId(path.join(homes.jey, 'auth.json'));
-    const americanoId = readAccountId(path.join(homes.americano, 'auth.json'));
-    if (jeyId && americanoId && jeyId === americanoId) {
-      throw new AccountSwitchError('SAME_LOGIN', 'Jey e Americano estao com o mesmo login. Confira o configurador.');
+    const targetID = readAccountId(source);
+    if (Object.entries(homes).some(([other, home]) => other !== id && readAccountId(path.join(home, 'auth.json')) === targetID)) {
+      throw new AccountSwitchError('SAME_LOGIN', 'Esse login ja pertence a outro perfil. Configure contas diferentes.');
     }
 
     if (activeAccount() === id) {
@@ -428,5 +428,7 @@ export async function switchCodexAccount(id, { onProgress = () => {} } = {}) {
       + ' activeAccount=' + error.activeAccount + ' '
       + (error.stack || error.message || String(error)));
     throw error;
+  } finally {
+    if (releaseOperation) releaseOperation();
   }
 }

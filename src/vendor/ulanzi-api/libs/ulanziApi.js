@@ -79,7 +79,10 @@ export default class UlanziApi extends EventEmitter {
     this.websocket.onmessage = (evt) => {
       Utils.log("[ULANZIDECK] MAIN WEBSOCKET MESSGE ");
 
-      const data = evt?.data ? JSON.parse(evt.data) : null;
+      let data;
+      try { data = evt?.data ? JSON.parse(evt.data) : null; }
+      catch { Utils.warn('[ULANZIDECK] Ignoring malformed Studio frame'); return; }
+      if (!data || typeof data !== 'object' || Array.isArray(data) || typeof data.cmd !== 'string') return;
 
       Utils.log(
         `[ULANZIDECK] MAIN WEBSOCKET MESSGE DATA: ${

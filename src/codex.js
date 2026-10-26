@@ -6,10 +6,8 @@ import { spawn, spawnSync } from 'node:child_process';
 const REQUEST_ID = 2;
 const TIMEOUT_MS = 7000;
 
-export const ACCOUNTS = [
-  { id: 'jey', label: 'JEY', home: path.join(os.homedir(), '.codex-jey') },
-  { id: 'americano', label: 'AMERICANO', home: path.join(os.homedir(), '.codex-americano') },
-];
+import { ACCOUNTS } from './accounts.js';
+export { ACCOUNTS } from './accounts.js';
 
 function isScoped(limit) {
   return typeof limit?.limitName === 'string' && limit.limitName.trim().length > 0;
@@ -122,7 +120,7 @@ function resolveCodexBinary() {
   return 'codex';
 }
 
-function codexSpawnTarget() {
+export function codexSpawnTarget() {
   const binary = resolveCodexBinary();
 
   if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(binary)) {
@@ -176,12 +174,13 @@ async function queryRateLimits(home) {
     let child;
     try {
       const args = target.commandLine
-        ? [...target.argsPrefix, target.commandLine]
+        ? [...target.argsPrefix, '"' + target.commandLine + '"']
         : ['app-server'];
       child = spawn(target.command, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
         shell: false,
+        windowsVerbatimArguments: Boolean(target.commandLine),
         env: { ...process.env, CODEX_HOME: home },
       });
     } catch (error) {

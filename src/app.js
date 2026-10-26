@@ -3,12 +3,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import UlanziApi from './vendor/ulanzi-api/index.js';
-import { queryAllAccounts } from './codex.js';
+import { queryAllAccounts, ACCOUNTS } from './codex.js';
 import { gaugeSvg, initRenderer, svgToDataUri } from './render.js';
 import { startMobileServer } from './mobile.js';
 import { readCodexDashboard } from './activity.js';
 import { activeAccount, switchCodexAccount, SWITCH_LOG_FILE } from './switch.js';
 import { switchIconSvg } from './switch-icons.js';
+import { createGoalController } from './goals.js';
+import { startGoalsPanel, openGoalsInStudio, openGoalsBrowser } from './goals-panel.js';
+import { goalIconSvg } from './goal-icons.js';
+import { isGoalMonitorRunning, processAlive } from './goal-store.js';
 
 const PLUGIN_UUID = 'com.ulanzi.ulanzistudio.jeycodex';
 const REFRESH_MS = 30000;
@@ -32,15 +36,23 @@ function copyToClipboard(value) {
 }
 
 log('plugin boot');
+process.on('uncaughtExceptionMonitor', (error) => log('fatal: ' + (error?.stack || String(error))));
+process.on('exit', (code) => log('plugin exit code=' + code));
 
 const ACTIONS = {
   'com.ulanzi.ulanzistudio.jeycodex.jey5h': { account: 'jey', window: 'fiveHour', label: '5H' },
   'com.ulanzi.ulanzistudio.jeycodex.jey7d': { account: 'jey', window: 'sevenDay', label: '7D' },
   'com.ulanzi.ulanzistudio.jeycodex.americano5h': { account: 'americano', window: 'fiveHour', label: '5H' },
   'com.ulanzi.ulanzistudio.jeycodex.americano7d': { account: 'americano', window: 'sevenDay', label: '7D' },
+  'com.ulanzi.ulanzistudio.jeycodex.hb5h': { account: 'hb', window: 'fiveHour', label: '5H' },
+  'com.ulanzi.ulanzistudio.jeycodex.hb7d': { account: 'hb', window: 'sevenDay', label: '7D' },
   'com.ulanzi.ulanzistudio.jeycodex.mobile': { mobile: true, label: 'CELULAR' },
   'com.ulanzi.ulanzistudio.jeycodex.switchjey': { switchAccount: 'jey', label: 'JEY' },
   'com.ulanzi.ulanzistudio.jeycodex.switchamericano': { switchAccount: 'americano', label: 'AMERICANO' },
+  'com.ulanzi.ulanzistudio.jeycodex.switchhb': { switchAccount: 'hb', label: 'HB' },
+  'com.ulanzi.ulanzistudio.jeycodex.goals': { goalKind: 'goals' },
+  'com.ulanzi.ulanzistudio.jeycodex.goalmonitor': { goalKind: 'monitor' },
+  'com.ulanzi.ulanzistudio.jeycodex.goalautomatic': { goalKind: 'automatic' },
 };
 
 const api = new UlanziApi();
@@ -56,6 +68,57 @@ let switchingStage = '';
 let switchError = null;
 let switchErrorTimeout = null;
 const lastGood = new Map();
+const goals = createGoalController({ isSwitching: () => Boolean(switchingAccount) });
+let goalsPanel = null;
+let goalsPanelOpening = null;
+let goalActionBusy = false;
+let studioWasConnected = false;
+let studioConnected = false;
+let reconnectTimer = null;
+let connectionAttempts = 0;
+
+function connectToStudio() {
+  connectionAttempts++;
+  log('studio connect attempt=' + connectionAttempts);
+  try { api.connect(PLUGIN_UUID, api.port || 3906, api.address || '127.0.0.1'); }
+  catch (error) { log('studio connect failed: ' + String(error)); retryStudioConnection(); }
+}
+
+function retryStudioConnection() {
+  if (reconnectTimer || studioConnected) return;
+  const delay = Math.min(10000, 500 * 2 ** Math.min(connectionAttempts - 1, 5));
+  log('studio retry in=' + delay);
+  reconnectTimer = setTimeout(() => { reconnectTimer = null; connectToStudio(); }, delay);
+}
+
+function refreshSafely(feedback = false) {
+  void refresh(feedback).catch((error) => log('refresh error: ' + String(error)));
+}
+
+async function openGoals() {
+  if (!goalsPanel && !goalsPanelOpening) {
+    goalsPanelOpening = startGoalsPanel(goals, {
+      openBrowser: (url) => openGoalsInStudio(api, url),
+      fallbackBrowser: openGoalsBrowser,
+    }).then((panel) => { goalsPanel = panel; return panel; })
+      .finally(() => { goalsPanelOpening = null; });
+  }
+  const panel = goalsPanel || await goalsPanelOpening;
+  log('goals panel opening');
+  api.toast('Abrindo painel de Goals no navegador...');
+  try {
+    await panel.open();
+    log('goals panel opened');
+  } catch (error) {
+    const copied = copyToClipboard(panel.url);
+    log('goals panel browser failed copied=' + copied);
+    const failure = new Error(copied
+      ? 'Não consegui abrir o navegador. Cole a URL copiada na barra de endereços (Ctrl+V).'
+      : 'Não consegui abrir o navegador nem copiar a URL. Verifique o navegador padrão do Windows.');
+    failure.code = 'GOALS_BROWSER_FAILED';
+    throw failure;
+  }
+}
 
 function showTemporarySwitchError(errorInfo) {
   switchError = errorInfo;
@@ -92,7 +155,7 @@ function specFor(message) {
 function accountFor(spec) {
   return accounts.get(spec.account) || lastGood.get(spec.account) || {
     id: spec.account,
-    label: spec.account === 'jey' ? 'JEY' : 'AMERICANO',
+    label: ACCOUNTS.find((a) => a.id === spec.account)?.label || spec.account.toUpperCase(),
     status: 'loading',
     fiveHour: null,
     sevenDay: null,
@@ -102,7 +165,7 @@ function accountFor(spec) {
 function mobileAccount(id) {
   const current = accounts.get(id) || lastGood.get(id) || {
     id,
-    label: id === 'jey' ? 'JEY' : 'AMERICANO',
+    label: ACCOUNTS.find((a) => a.id === id)?.label || id.toUpperCase(),
     status: 'loading',
     fiveHour: null,
     sevenDay: null,
@@ -132,16 +195,17 @@ function mobileState(port = Number(process.env.JEY_MOBILE_PORT || 3333)) {
     sessionCount: dashboard.sessionCount,
     activeSessionCount: dashboard.activeSessionCount,
     waitingSessionCount: dashboard.waitingSessionCount,
-    accounts: [
-      mobileAccount('jey'),
-      mobileAccount('americano'),
-    ],
+    accounts: ACCOUNTS.map((a) => mobileAccount(a.id)),
   };
 }
 
 function renderInstance(instance) {
   const spec = ACTIONS[instance.uuid];
   if (!spec) return;
+  if (spec.goalKind) {
+    api.setBaseDataIcon(instance.context, svgToDataUri(goalIconSvg(spec.goalKind, goals.status())));
+    return;
+  }
   if (spec.mobile) {
     // The icon shows the action that pressing the key will perform.
     api.setStateIcon(instance.context, mobileRunning ? 1 : 0, 'CELULAR');
@@ -245,9 +309,13 @@ async function refresh(showFeedback = false) {
 
 
 async function performAccountSwitch(id, { showToast = true } = {}) {
+  if (isGoalMonitorRunning()) {
+    if (showToast) api.toast('Pare o monitor de Goals antes de trocar a conta manualmente.');
+    throw new Error('Pare o monitor de Goals antes de trocar a conta manualmente.');
+  }
   if (switchingAccount) throw new Error('Ja existe uma troca de conta em andamento.');
 
-  const label = id === 'jey' ? 'JEY' : 'AMERICANO';
+  const label = ACCOUNTS.find((a) => a.id === id)?.label || id.toUpperCase();
   if (activeAccount() === id) {
     clearSwitchError();
     renderAll();
@@ -359,7 +427,7 @@ api.onAdd((message) => {
     log('initial render failed: ' + String(error));
   }
 
-  void refresh();
+  refreshSafely();
 });
 
 api.onClear((message) => {
@@ -375,6 +443,32 @@ api.onClear((message) => {
 
 api.onRun((message) => {
   const spec = ACTIONS[message?.uuid];
+
+  if (spec?.goalKind) {
+    if (goalActionBusy) return;
+    goalActionBusy = true;
+    void (async () => {
+      if (spec.goalKind === 'goals') { await openGoals(); return; }
+      const status = goals.status();
+      if (spec.goalKind === 'automatic') {
+        await goals.setAutomatic(!status.autoSwitch);
+        api.toast(status.autoSwitch ? 'Troca automática DESLIGADA' : 'Troca automática LIGADA');
+      } else if (status.running) {
+        await goals.stop(); api.toast('Pausa da execução solicitada');
+      } else {
+        if (!status.selected || !status.readyToStart) {
+          api.toast(status.selected ? 'Confirme a conversa livre no PAINEL GOALS para habilitar Executar.' : 'Nenhum Goal selecionado. Use PAINEL GOALS para selecionar ou criar um.');
+          return;
+        }
+        await goals.start(); api.toast('Execução do Goal iniciada pelo Codex CLI');
+      }
+    })().catch(async (error) => {
+      log('goal action error: ' + error.message);
+      api.toast(error.message);
+      try { api.showAlert(message.context); } catch {}
+    }).finally(() => { goalActionBusy = false; renderAll(); });
+    return;
+  }
 
   if (spec?.switchAccount) {
     void performAccountSwitch(spec.switchAccount).catch(() => {
@@ -396,19 +490,34 @@ api.onRun((message) => {
     log('mobile action pressed copied=' + copied + ' url=' + url);
     return;
   }
-  void refresh(true);
+  refreshSafely(true);
 });
 
 api.onConnected(() => {
+  studioWasConnected = true;
+  studioConnected = true;
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = null;
   log('studio connected');
-  void refresh();
+  // Let the registration frame flush before starting local CLI discovery.
+  setImmediate(() => refreshSafely());
 });
 
 api.onError((error) => { log('studio error: ' + String(error)); });
-api.onClose(() => { log('studio closed'); });
+api.onClose(() => {
+  log('studio closed');
+  studioConnected = false;
+  instances.clear();
+  if (!studioWasConnected || processAlive(process.ppid)) { retryStudioConnection(); return; }
+  // Studio owns this foreground plugin process. Its background Goal worker
+  // remains independent. Do not leave orphan UI clients after Studio exits.
+  if (mobile) stopMobile();
+  if (goalsPanel) void goalsPanel.close();
+  process.exit(0);
+});
 
 log('connecting to studio');
-api.connect(PLUGIN_UUID);
+connectToStudio();
 
 function updateMobileIcons() {
   for (const instance of instances.values()) {
@@ -448,8 +557,17 @@ function stopMobile() {
   log('mobile server stopped');
 }
 
-void refresh();
-
 setInterval(() => {
-  void refresh();
+  if (studioConnected) refreshSafely();
 }, REFRESH_MS);
+
+// The worker owns execution. Poll only local status files to update the keys;
+// the deck never drives a second quota/restart loop.
+setInterval(() => {
+  for (const instance of instances.values()) {
+    const spec = ACTIONS[instance.uuid];
+    if (spec?.goalKind || spec?.switchAccount) {
+      try { renderInstance(instance); } catch (error) { log('goal icon error: ' + error.message); }
+    }
+  }
+}, 2000);

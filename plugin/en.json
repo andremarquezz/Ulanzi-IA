@@ -2,12 +2,57 @@
   "Name": "Codex Limits",
   "Description": "JEY + AMERICANO Codex quota monitor.",
   "Actions": [
-    { "Name": "JEY 5H", "Tooltip": "JEY - 5 hour limit" },
-    { "Name": "JEY 7D", "Tooltip": "JEY - weekly limit" },
-    { "Name": "AMERICANO 5H", "Tooltip": "AMERICANO - 5 hour limit" },
-    { "Name": "AMERICANO 7D", "Tooltip": "AMERICANO - weekly limit" },
-    { "Name": "USAR JEY", "Tooltip": "Switch active Codex account to JEY" },
-    { "Name": "USAR AMERICANO", "Tooltip": "Switch active Codex account to AMERICANO" },
-    { "Name": "ABRIR NO CELULAR", "Tooltip": "Start or stop Codex Status on your phone" }
+    {
+      "Name": "PAINEL GOALS",
+      "Tooltip": "Open Goal selection, creation, execution output and logs"
+    },
+    {
+      "Name": "EXECUTAR / PAUSAR",
+      "Tooltip": "Run or resume the selected Goal through Codex CLI, or pause its execution. Choose and confirm it in PAINEL GOALS first."
+    },
+    {
+      "Name": "TROCA AUTOMÁTICA",
+      "Tooltip": "Automatically rotate JEY, AMERICANO and HB according to confirmed capacity; wait if all are exhausted."
+    },
+    {
+      "Name": "JEY 5H",
+      "Tooltip": "JEY - 5 hour limit"
+    },
+    {
+      "Name": "JEY 7D",
+      "Tooltip": "JEY - weekly limit"
+    },
+    {
+      "Name": "AMERICANO 5H",
+      "Tooltip": "AMERICANO - 5 hour limit"
+    },
+    {
+      "Name": "AMERICANO 7D",
+      "Tooltip": "AMERICANO - weekly limit"
+    },
+    {
+      "Name": "CODEX JEY",
+      "Tooltip": "Switch active Codex account to JEY"
+    },
+    {
+      "Name": "CODEX AMERICANO",
+      "Tooltip": "Switch active Codex account to AMERICANO"
+    },
+    {
+      "Name": "ABRIR NO CELULAR",
+      "Tooltip": "Start or stop Codex Status on your phone"
+    },
+    {
+      "Name": "HB 5H",
+      "Tooltip": "HB - 5 hour limit"
+    },
+    {
+      "Name": "HB 7D",
+      "Tooltip": "HB - weekly limit"
+    },
+    {
+      "Name": "USAR HB",
+      "Tooltip": "Switch to HB; sign in through PAINEL GOALS first"
+    }
   ]
 }

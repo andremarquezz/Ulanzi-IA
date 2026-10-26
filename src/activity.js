@@ -14,6 +14,7 @@ function codexRoots() {
     process.env.CODEX_HOME,
     path.join(home, '.codex-jey'),
     path.join(home, '.codex-americano'),
+    path.join(home, '.codex-hb'),
     path.join(home, '.codex'),
   ].filter((root, index, values) => root && values.indexOf(root) === index);
 }
@@ -307,6 +308,7 @@ function profileFromSource(source) {
   const normalized = String(source || '').replace(/\\/g, '/').toLowerCase();
   if (normalized.includes('/.codex-jey/')) return 'JEY';
   if (normalized.includes('/.codex-americano/')) return 'AMERICANO';
+  if (normalized.includes('/.codex-hb/')) return 'HB';
   return 'ATUAL';
 }
 

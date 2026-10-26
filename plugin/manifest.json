@@ -1,13 +1,15 @@
 {
-  "Version": "1.1.0",
+  "Version": "1.4.0",
   "Author": "Jey",
   "Name": "Codex Limits",
-  "Description": "JEY + AMERICANO Codex quota monitor for D200H.",
+  "Description": "Contas e execução de Goals pelo Codex CLI, com saída ao vivo e troca automática.",
   "Icon": "resources/icons/usage.png",
   "CodePath": "plugin/app.js",
   "Type": "JavaScript",
   "UUID": "com.ulanzi.ulanzistudio.jeycodex",
-  "Devices": ["D200H"],
+  "Devices": [
+    "D200H"
+  ],
   "OS": [
     {
       "Platform": "windows",
@@ -16,52 +18,129 @@
   ],
   "Actions": [
     {
+      "Name": "PAINEL GOALS",
+      "Icon": "resources/icons/goals.png",
+      "Tooltip": "Abre a tela para criar, selecionar e acompanhar a execução e os logs do Goal",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.goals",
+      "Controllers": [
+        "Keypad"
+      ],
+      "state": 0,
+      "States": [
+        {
+          "Image": "resources/icons/goals.png"
+        }
+      ]
+    },
+    {
+      "Name": "EXECUTAR / PAUSAR",
+      "Icon": "resources/icons/goal-monitor.png",
+      "Tooltip": "Executa ou retoma o Goal confirmado pelo Codex CLI; durante a execução, pausa o Goal. Configure a seleção em PAINEL GOALS.",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.goalmonitor",
+      "Controllers": [
+        "Keypad"
+      ],
+      "state": 0,
+      "States": [
+        {
+          "Image": "resources/icons/goal-monitor.png"
+        }
+      ]
+    },
+    {
+      "Name": "TROCA AUTOMÁTICA",
+      "Icon": "resources/icons/goal-automatic.png",
+      "Tooltip": "Alterna Jey, Americano e HB conforme a capacidade de uso; aguarda se todas estiverem sem cota.",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.goalautomatic",
+      "Controllers": [
+        "Keypad"
+      ],
+      "state": 0,
+      "States": [
+        {
+          "Image": "resources/icons/goal-automatic.png"
+        }
+      ]
+    },
+    {
       "Name": "JEY 5H",
       "Icon": "resources/icons/usage.png",
       "Tooltip": "JEY - limite de 5 horas",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.jey5h",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
-      "States": [{ "Image": "resources/icons/usage.png" }]
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
     },
     {
       "Name": "JEY 7D",
       "Icon": "resources/icons/usage.png",
       "Tooltip": "JEY - limite semanal",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.jey7d",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
-      "States": [{ "Image": "resources/icons/usage.png" }]
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
     },
     {
       "Name": "AMERICANO 5H",
       "Icon": "resources/icons/usage.png",
       "Tooltip": "AMERICANO - limite de 5 horas",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.americano5h",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
-      "States": [{ "Image": "resources/icons/usage.png" }]
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
     },
     {
       "Name": "AMERICANO 7D",
       "Icon": "resources/icons/usage.png",
       "Tooltip": "AMERICANO - limite semanal",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.americano7d",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
-      "States": [{ "Image": "resources/icons/usage.png" }]
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
     },
     {
       "Name": "USAR JEY",
       "Icon": "resources/icons/switch-jey-idle.png",
       "Tooltip": "Troca o Codex ativo para JEY",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.switchjey",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
       "States": [
-        { "Image": "resources/icons/switch-jey-idle.png" },
-        { "Image": "resources/icons/switch-jey-active.png" },
-        { "Image": "resources/icons/switch-jey-switching.png" }
+        {
+          "Image": "resources/icons/switch-jey-idle.png"
+        },
+        {
+          "Image": "resources/icons/switch-jey-active.png"
+        },
+        {
+          "Image": "resources/icons/switch-jey-switching.png"
+        }
       ]
     },
     {
@@ -69,12 +148,20 @@
       "Icon": "resources/icons/switch-americano-idle.png",
       "Tooltip": "Troca o Codex ativo para AMERICANO",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.switchamericano",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
       "States": [
-        { "Image": "resources/icons/switch-americano-idle.png" },
-        { "Image": "resources/icons/switch-americano-active.png" },
-        { "Image": "resources/icons/switch-americano-switching.png" }
+        {
+          "Image": "resources/icons/switch-americano-idle.png"
+        },
+        {
+          "Image": "resources/icons/switch-americano-active.png"
+        },
+        {
+          "Image": "resources/icons/switch-americano-switching.png"
+        }
       ]
     },
     {
@@ -82,11 +169,68 @@
       "Icon": "resources/icons/mobile-running.png",
       "Tooltip": "Inicia ou para o painel Codex Status no celular",
       "UUID": "com.ulanzi.ulanzistudio.jeycodex.mobile",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "state": 0,
       "States": [
-        { "Image": "resources/icons/mobile-running.png" },
-        { "Image": "resources/icons/mobile-stopped.png" }
+        {
+          "Image": "resources/icons/mobile-running.png"
+        },
+        {
+          "Image": "resources/icons/mobile-stopped.png"
+        }
+      ]
+    },
+    {
+      "Name": "HB 5H",
+      "Icon": "resources/icons/usage.png",
+      "Tooltip": "HB - limite de 5 horas",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.hb5h",
+      "Controllers": [
+        "Keypad"
+      ],
+      "state": 0,
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
+    },
+    {
+      "Name": "HB 7D",
+      "Icon": "resources/icons/usage.png",
+      "Tooltip": "HB - limite semanal",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.hb7d",
+      "Controllers": [
+        "Keypad"
+      ],
+      "state": 0,
+      "States": [
+        {
+          "Image": "resources/icons/usage.png"
+        }
+      ]
+    },
+    {
+      "Name": "USAR HB",
+      "Icon": "resources/icons/switch-hb-idle.png",
+      "Tooltip": "Troca a conta ativa para HB; configure o login em PAINEL GOALS",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.switchhb",
+      "Controllers": [
+        "Keypad"
+      ],
+      "state": 0,
+      "States": [
+        {
+          "Image": "resources/icons/switch-hb-idle.png"
+        },
+        {
+          "Image": "resources/icons/switch-hb-active.png"
+        },
+        {
+          "Image": "resources/icons/switch-hb-switching.png"
+        }
       ]
     }
   ],

@@ -1,6 +1,6 @@
 {
   "name": "jey-codex-d200h",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "description": "Personal Ulanzi D200H monitor for JEY and AMERICANO Codex quotas",
