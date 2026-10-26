@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="92" fill="#071510"/>
+  <rect x="34" y="34" width="444" height="444" rx="74" fill="#0b1b16" stroke="#16a34a" stroke-width="10"/>
+  <path d="M126 178l-58 78 58 78" fill="none" stroke="#4ade80" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M386 178l58 78-58 78" fill="none" stroke="#4ade80" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="315" text-anchor="middle" font-family="Arial, sans-serif" font-size="218" font-weight="800" fill="#ecfdf5">A</text>
+  <text x="256" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="800" letter-spacing="3" fill="#4ade80">AMERICANO</text>
+</svg>

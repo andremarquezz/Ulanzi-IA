@@ -1,5 +1,5 @@
 {
-  "Version": "1.0.0",
+  "Version": "1.1.0",
   "Author": "Jey",
   "Name": "Codex Limits",
   "Description": "JEY + AMERICANO Codex quota monitor for D200H.",
@@ -8,7 +8,12 @@
   "Type": "JavaScript",
   "UUID": "com.ulanzi.ulanzistudio.jeycodex",
   "Devices": ["D200H"],
-  "OS": [{ "Platform": "windows", "MinimumVersion": "10" }],
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
   "Actions": [
     {
       "Name": "JEY 5H",
@@ -45,7 +50,47 @@
       "Controllers": ["Keypad"],
       "state": 0,
       "States": [{ "Image": "resources/icons/usage.png" }]
+    },
+    {
+      "Name": "USAR JEY",
+      "Icon": "resources/icons/switch-jey-idle.png",
+      "Tooltip": "Troca o Codex ativo para JEY",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.switchjey",
+      "Controllers": ["Keypad"],
+      "state": 0,
+      "States": [
+        { "Image": "resources/icons/switch-jey-idle.png" },
+        { "Image": "resources/icons/switch-jey-active.png" },
+        { "Image": "resources/icons/switch-jey-switching.png" }
+      ]
+    },
+    {
+      "Name": "USAR AMERICANO",
+      "Icon": "resources/icons/switch-americano-idle.png",
+      "Tooltip": "Troca o Codex ativo para AMERICANO",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.switchamericano",
+      "Controllers": ["Keypad"],
+      "state": 0,
+      "States": [
+        { "Image": "resources/icons/switch-americano-idle.png" },
+        { "Image": "resources/icons/switch-americano-active.png" },
+        { "Image": "resources/icons/switch-americano-switching.png" }
+      ]
+    },
+    {
+      "Name": "ABRIR NO CELULAR",
+      "Icon": "resources/icons/mobile-running.png",
+      "Tooltip": "Inicia ou para o painel Codex Status no celular",
+      "UUID": "com.ulanzi.ulanzistudio.jeycodex.mobile",
+      "Controllers": ["Keypad"],
+      "state": 0,
+      "States": [
+        { "Image": "resources/icons/mobile-running.png" },
+        { "Image": "resources/icons/mobile-stopped.png" }
+      ]
     }
   ],
-  "Software": { "MinVersion": "2.1.4" }
+  "Software": {
+    "MinVersion": "2.1.4"
+  }
 }

@@ -13,8 +13,11 @@ Inclui:
 - refresh automático e manual;
 - estados SYNC, STALE, LOGIN e OFFLINE;
 - painel mobile acessível pela rede local;
-- troca de conta pelo celular;
-- regra de não abrir o VS Code quando ele estiver fechado.
+- troca de conta pelo celular e por teclas dedicadas no Ulanzi;
+- feedback visual de conta inativa, ativa e `TROCANDO`;
+- reinício do VS Code preservando/reabrindo as pastas e workspaces detectados;
+- regra de não abrir o VS Code quando ele estiver fechado;
+- botão mobile com affordance corrigida: iniciar quando parado, `X` para parar quando rodando.
 
 ## Executar
 
@@ -25,10 +28,17 @@ npm run build
 npm run install:ulanzi
 ```
 
-Depois de instalar, reinicie o Ulanzi Studio. A URL do painel mobile aparece no log:
+Depois de instalar, reinicie completamente o Ulanzi Studio. O plugin agora expõe **USAR JEY**, **USAR AMERICANO** e **ABRIR NO CELULAR**. Arraste as ações que quiser para as teclas. Pressione **USAR JEY/AMERICANO** para trocar a conta ativa; a tecla muda para `TROCANDO` durante a operação e para `ATIVO` ao concluir. Arraste **ABRIR NO CELULAR** para uma tecla e pressione uma vez. Isso inicia o servidor apenas quando você quiser acompanhar o Codex; pressione novamente para pará-lo.
+
+A URL é copiada automaticamente para o clipboard do Windows. Para consultar novamente sem precisar capturar o toast:
 
 ```powershell
 Get-Content "$env:TEMP\\jey-codex-d200h.log" -Tail 100 | Select-String "open on phone"
 ```
 
-O celular precisa estar na mesma rede Wi-Fi do PC.
+O celular precisa estar na mesma rede Wi-Fi do PC. A aba **CODEX** acompanha eventos recentes automaticamente; a aba **CONSUMO** mantém os limites.
+
+
+## Instalar no iPhone
+
+Abra a URL do painel no Safari, toque em Compartilhar e escolha **Adicionar à Tela de Início**. O painel possui manifest, ícone e service worker para abrir como aplicativo em tela cheia. A instalação continua funcionando somente enquanto o PC estiver ligado e na mesma rede local.
